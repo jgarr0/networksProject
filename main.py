@@ -3,14 +3,19 @@ import sys
 from urllib.request import DataHandler
 from requests import get
 from os.path import exists
+
+# other impots
+# json files
 import json
+# command parsing to preserve substrings
+import shlex
 
 #######################################################################################################################################################
 
 # supported instructions:
-#   h                                       = explanation + show commands
-#   m [ip:optional port] ["message"]        = send message
-#   v                                       = 
+#   h                                                           = explanation + show commands
+#   m [ip:optional port] [message type] ['message'] ['key']     = send message
+#   v                                                           = 
 
 VALIDCMDS = ['m', 'msg', 'v', 'view', 's', 'settings', 'h', 'help', '?', 'q', 'quit', 'e', 'exit']
 
@@ -75,17 +80,19 @@ f = open('settings.json')
 userInfo = json.load(f)
 f.close()
 
+# save name and current port for display purposes
 name = userInfo['name']
 currentPort = userInfo['defaultPort']
-
-# create listening socket on its own thread here
-
 
 # display current public IP and defined port
 print('welcome ' + name + '!')
 print('\tYour Public IP is:', getPublicIP())
 print('\tCurrently receiving on port:', currentPort)
 print('##########################################\n')
+
+# create listening socket on its own thread here
+
+
 
 # begin main program
 runFlag = True
@@ -94,31 +101,31 @@ while(runFlag):
     inputstring = str(input(name + "> "))
 
     # split input at spaces to get command + arguments
-    commandParts = inputstring.split()
-
+    commandParts = shlex.split(inputstring)
+    print(commandParts)
     # if valid command proceed
-    if(commandParts[0] not in VALIDCMDS):
-        print(commandParts[0], "is not a recognized command")
+    if(commandParts[0].lower() not in VALIDCMDS):
+        print(commandParts[0].lower(), "is not a recognized command")
 
     # if valid command, execute command
     # msg [m, msg]
-    if((inputstring == VALIDCMDS[0]) or (inputstring == VALIDCMDS[1])):
-        print(' send message')
+    if((commandParts[0].lower() == VALIDCMDS[0]) or (commandParts[0].lower() == VALIDCMDS[1])):
+        print('send message')
 
     # view [v, view]
-    if((inputstring == VALIDCMDS[2]) or (inputstring == VALIDCMDS[3])):
+    if((commandParts[0].lower() == VALIDCMDS[2]) or (commandParts[0].lower() == VALIDCMDS[3])):
         print('view messages')
 
     # settings [settings, s]
-    if((inputstring == VALIDCMDS[4]) or (inputstring == VALIDCMDS[5])):
+    if((commandParts[0].lower() == VALIDCMDS[4]) or (commandParts[0].lower() == VALIDCMDS[5])):
         print('change settings')
 
     # help [h, help, q]
-    if((inputstring == VALIDCMDS[6]) or (inputstring == VALIDCMDS[7]) or (inputstring == VALIDCMDS[8])):
+    if((commandParts[0].lower() == VALIDCMDS[6]) or (commandParts[0].lower() == VALIDCMDS[7]) or (commandParts[0].lower() == VALIDCMDS[8])):
         print('change settings')
 
     # quit [q, quit, e, exit]
-    if((inputstring == VALIDCMDS[9]) or (inputstring == VALIDCMDS[10]) or (inputstring == VALIDCMDS[11]) or (inputstring == VALIDCMDS[12])):
+    if((commandParts[0].lower() == VALIDCMDS[9]) or (commandParts[0].lower() == VALIDCMDS[10]) or (commandParts[0].lower() == VALIDCMDS[11]) or (commandParts[0].lower() == VALIDCMDS[12])):
         runFlag = False
 
 # kill all sockets/threads
