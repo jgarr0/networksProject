@@ -1,25 +1,27 @@
 from asyncio.windows_events import NULL
 from cgi import test
-from operator import length_hint, truediv
+from operator import length_hint, truediv   # get length of lists
 import sys 
 from urllib.request import DataHandler
-from requests import get
-from os.path import exists
+from requests import get                    # get current IP
+from os.path import exists                  # check that files exist
 
 # other impots
-# json files
-import json
-# command parsing to preserve substrings
-import shlex
+import json                                 # json file support + associated functions                               
+import shlex                                # command parsing to preserve substrings
 
 #######################################################################################################################################################
 
 # supported instructions:
 #   h                                                           = explanation + show commands
 #   m [ip:optional port] [message type] ['message'] ['key']     = send message
-#   v                                                           = 
+#   l                                                           = list messages
+#   v [index] [destination] [name] [decryption key]             = decrypt a message'
 
-VALIDCMDS = ['m', 'msg', 'v', 'view', 's', 'settings', 'h', 'help', '?', 'q', 'quit', 'e', 'exit']
+#######################################################################################################################################################
+
+# recognized commands
+VALIDCMDS = ['m', 'msg', 'v', 'view', 's', 'settings', 'h', 'help', '?', 'q', 'quit', 'e', 'exit', 'l', 'list']
 
 # type of content that can be sent
 # -f = file; specify a file path in the next parameter
@@ -31,10 +33,14 @@ DFTPORT = 11083
 
 #######################################################################################################################################################
 
+# header
+print('################################\nPeer to Peer Encrypted Messanger\n################################\n')
+
 # code from https://www.ipify.org/
 def getPublicIP():
     return get('https://api.ipify.org').text
 
+# assign the default port
 def newPort():
     print("Enter a new port to recieve messages on:")
     portFlag = True
@@ -56,6 +62,8 @@ def newPort():
     return newPortNum
 
 # first time setup
+# declare a name, desired port, default encryption key
+# declare desired location to store decrypted data?
 def firstTimeSetup():
     #begin setup
     nick = input('Please enter your nickname: ')
@@ -74,8 +82,6 @@ def firstTimeSetup():
         else:
             print('The default key can not be empty')
 
-    print('\n')
-
     # json struct for user info
     userInfo = {
         "name" : nick,
@@ -87,6 +93,10 @@ def firstTimeSetup():
     with open('settings.json', 'w') as f:
         json.dump(userInfo, f)
 
+    # display commands
+    print('################################')
+    printHelp()
+    
 # check that IP address provided is valid
 def ipCheck(ipAddress):
     subBlocks = ipAddress.split('.')
@@ -102,9 +112,11 @@ def ipCheck(ipAddress):
 
 # check that the provided port is valid
 def portCheck(portnumber):
+    # invalid if not purely numeric
     if(not str(portnumber).isnumeric()):
         return False
-    if(int(portnumber) > 65535 or int(portnumber < 1024)):
+    # invalid if out of bounds
+    if(int(portnumber) > 65535 or int(portnumber) < 1024):
         return False
     return True
 
@@ -117,6 +129,36 @@ def getExt(filePath):
         return NULL
     else:
         return splitPath[numPathArgs-1]
+
+# print all supported commands
+def printHelp():
+    print('Supported Instructions:\n')
+
+    # m cmd
+    print('send a message- m, msg')
+    print('\n\tm [ip:optional port] [message type] ["message"] ["key"] \t= send a message')
+    print('\n\t\tip \t\t= destination IP address (xxx.xxx.xxx.xxx)\n\t\tport \t\t= optional destination port (if none provided, the default port is used)')
+    print('\t\tmessage type \t= -t for plain text, -f for file\n\t\tmessage \t= plaintext for text, a path to the file for -f')
+    print('\t\tkey \t\t= optional encryption key. T client\'s default encryption key is used if none provided.')
+
+    # l cmd
+    print('\nlist all messages- l, list')
+    print('\tl \t\t\t\t\t\t\t\t= list all received messages')
+
+    # v cmd
+    print('\nview message- v, view')
+    print('\tv [index] [destination] [name] [decryption key] \t\t= decrypt a message')
+    print('\n\t\tindex \t\t= number assigned to message\n\t\tdestination \t= optional location to write result (if none provided, the default location is used)')
+    print('\t\tname \t\t= name for file\n\t\tdecryption key \t= key to decrypt message')
+
+    # s cmd
+    print('\nsettings- s, settings')
+    print('\ts [arg] [variable] [new value] = change or view settings')
+    print('\t\targ \t\t= -v to view, -cc to change\n\t\tvariable \t= name, port, key, or path\n\t\tnew value \t= new value for parameter')
+
+    # q cmd
+    print('\nquit- q, quit, e, exit')
+    print('\tq \t\t\t\t\t\t\t\t = quit program\n')
 
 #######################################################################################################################################################
 
@@ -136,16 +178,17 @@ currentPort = userInfo['defaultPort']
 DFTKEY = userInfo["defaultKey"]
 
 # display current public IP and defined port
+print('##########################################')
 print('welcome ' + name + '!')
 print('\tYour Public IP is:', getPublicIP())
 print('\tCurrently receiving on port:', currentPort)
 print('##########################################\n')
 
 # create listening socket on its own thread here
+# want to place incoming messages into a list in memory- thoughts?
 
 
-
-# begin main program
+# begin main program loop
 runFlag = True
 while(runFlag):
     # check to see if listening socket has anything 
@@ -188,17 +231,18 @@ while(runFlag):
 
         # if valid, see if there is a port and check if it is valid
         if(ipArgs == 2):
-            if(not portCheck(destInfo[1])):
+            if(not portCheck(str(destInfo[1]))):
                 print(destInfo[1] + ' is not a valid port number')
                 continue;
 
             # if this passes, destPort = destInfo[1]
-            destPort = destInfo[1]
+            destPort = str(destInfo[1])
 
         # check type of message
         msgFmt = commandParts[2].lower()
         if(msgFmt not in VALFMT):
             print(commandParts[2] + "is not a valid argument for the type of content to send")
+            continue;
 
         # handle -t = text
         fileExt = NULL
@@ -246,9 +290,15 @@ while(runFlag):
         # all required info is here
         print("destination IP: " + str(destIP) + "\ndestination port: " + str(destPort) + "\ndata to send: " + str(dataToSend) + "\nfile ext (if applicable): " + str(fileExt))
 
+    # list [l, list]
+    if((commandParts[0].lower() == VALIDCMDS[13]) or (commandParts[0].lower() == VALIDCMDS[14])):
+        print('list all messages')
+        # display indexed list of all IPs that a message was received from (maybe date/time and name too)?
+
     # view [v, view]
     if((commandParts[0].lower() == VALIDCMDS[2]) or (commandParts[0].lower() == VALIDCMDS[3])):
-        print('view messages')
+        print('view a specific message')
+        # decrypt a message by its index
 
     # settings [settings, s]
     if((commandParts[0].lower() == VALIDCMDS[4]) or (commandParts[0].lower() == VALIDCMDS[5])):
@@ -256,7 +306,7 @@ while(runFlag):
 
     # help [h, help, q]
     if((commandParts[0].lower() == VALIDCMDS[6]) or (commandParts[0].lower() == VALIDCMDS[7]) or (commandParts[0].lower() == VALIDCMDS[8])):
-        print('change settings')
+        printHelp()
 
     # quit [q, quit, e, exit]
     if((commandParts[0].lower() == VALIDCMDS[9]) or (commandParts[0].lower() == VALIDCMDS[10]) or (commandParts[0].lower() == VALIDCMDS[11]) or (commandParts[0].lower() == VALIDCMDS[12])):
