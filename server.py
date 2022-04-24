@@ -3,6 +3,7 @@
 
 import socket
 import pickle
+import json
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPv4/TCP socket
 
@@ -15,6 +16,7 @@ def dataReceive():
     while True:
         # Accept a new connection
         clientConn, clientAddress = server.accept() 
+        responseIP = {"responseIP":clientAddress[0]} # Add client IP address to dictionary for later dictionary update
 
         # Create empty byte string for the received message and new message flag
         fullMsgPickled = b'' 
@@ -51,11 +53,35 @@ def dataReceive():
                 print ("---------- MESSAGE (Unpickled): ---------")
                 print(fullMsg)
                 print ("-----------------------------\n")
-                msgSize = 0 # Set message size back to zero, also will break the while loop
+
+                # Process the obtained JSON data to give us a dictionary again
+                receivedDict = json.loads(fullMsg)
+                print(f"The results:\n{receivedDict}")
+
+                # Update dictionary with the IP address to use for responses
+                receivedDict.update(responseIP)
+                print(f"The results v2:\n{receivedDict}")
+
+                # Detect if passed data is file. If so, deserialize. Else, assume we've received text
+                if not receivedDict.get("fileType") == "NULL":
+                    dataDecrypted = receivedDict.get("encryptedData") # ~~ DECRYPT DATA HERE - PASS encryptedData and encryptedKey, RETURN decrypted data ~~
+                    
+                    file = open(str(f"receivedFile." + receivedDict.get("fileType")), "wb") # write file as binary
+                    file.write(dataDecrypted)
+                    file.close()
+                else:
+                    dataDecrypted = receivedDict.get("encryptedData")
+
+                # Write JSON to file
+                with open('receivedData.json', 'w') as json_file:
+                    json.dump(fullMsg, json_file)
+
+                # Reset message size back to zero, will also break us out of the while loop
+                msgSize = 0 
 
         # Close connection
         clientConn.close()
-        print('client disconnected')
+        print('Client disconnected')
 
     return
 
