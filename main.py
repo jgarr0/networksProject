@@ -1,4 +1,5 @@
 from asyncio.windows_events import NULL
+from cgi import test
 from operator import length_hint, truediv
 import sys 
 from urllib.request import DataHandler
@@ -57,20 +58,29 @@ def newPort():
 # first time setup
 def firstTimeSetup():
     #begin setup
-    print('Please enter your nickname:')
-    nick = input()
-    print('Would you like to recieve messages on the default port (11083)?')
+    nick = input('Please enter your nickname: ')
     newPortNumber = DFTPORT 
 
     # get response
-    portResponse = input()
+    portResponse = input('Would you like to recieve messages on the default port (11083)? ')
     if(portResponse != 'y' and portResponse != 'yes'):
         newPortNumber = newPort()
+
+    defaultKey = NULL
+    while(defaultKey == NULL):
+        testInput = input('What would you like your default key for encrypting data to be? ')
+        if(testInput != NULL):
+            defaultKey = testInput
+        else:
+            print('The default key can not be empty')
+
+    print('\n')
 
     # json struct for user info
     userInfo = {
         "name" : nick,
-        "defaultPort" : newPortNumber
+        "defaultPort" : newPortNumber,
+        "defaultKey" : defaultKey
     }
 
     # write port and name to settings
@@ -98,6 +108,15 @@ def portCheck(portnumber):
         return False
     return True
 
+# get file extension from file path
+def getExt(filePath):
+    # split along '.'
+    splitPath = filePath.split('.')
+    numPathArgs = length_hint(splitPath)
+    if(numPathArgs == 0):
+        return NULL
+    else:
+        return splitPath[numPathArgs-1]
 
 #######################################################################################################################################################
 
@@ -114,6 +133,7 @@ f.close()
 # save name and current port for display purposes
 name = userInfo['name']
 currentPort = userInfo['defaultPort']
+DFTKEY = userInfo["defaultKey"]
 
 # display current public IP and defined port
 print('welcome ' + name + '!')
@@ -162,11 +182,18 @@ while(runFlag):
             print(destInfo[0] + ' is not a valid IP address')
             continue;
 
+        # assign destination IP
+        destIP = destInfo[0]
+        destPort = DFTPORT
+
         # if valid, see if there is a port and check if it is valid
         if(ipArgs == 2):
             if(not portCheck(destInfo[1])):
                 print(destInfo[1] + ' is not a valid port number')
                 continue;
+
+            # if this passes, destPort = destInfo[1]
+            destPort = destInfo[1]
 
         # check type of message
         msgFmt = commandParts[2].lower()
@@ -175,10 +202,49 @@ while(runFlag):
 
         # handle -t = text
         fileExt = NULL
+        dataToSend = NULL
         if(msgFmt == '-t'):
             print('text input')
+            # update contents
+            dataToSend = commandParts[3]
+
         if(msgFmt == '-f'):
             print('fileInput')
+            # check that file exists
+            if(exists(commandParts[3]) == False):
+                print('Specified file does not exist!')
+                continue;
+            # if the file exists
+            else:
+                fileExt = getExt(commandParts[3])
+                if(fileExt == NULL):
+                    print("Can not determine file extension from the provided path")
+                    continue;
+                fileInput = open(commandParts[3], 'rb')
+                dataToSend = fileInput.read()
+
+        # key check
+        currentKey = NULL
+
+        # if no key provided, use default key
+        if(numArg == 4):
+            currentKey = str(DFTKEY)
+
+        # if a key is provided, ensure that it is correct
+        if(numArg == 5):
+            # check that provided key is not whitespace
+            if(str(commandParts[4]).isspace()):
+                print("Provided key can not be only whitespace")
+                continue;
+
+            # check that provided key field is not empty
+            if(str(commandParts[4]) == ""):
+                print("Provided key can not be empty")
+                continue;
+
+        # if we are here, can open a socket and send the message
+        # all required info is here
+        print("destination IP: " + str(destIP) + "\ndestination port: " + str(destPort) + "\ndata to send: " + str(dataToSend) + "\nfile ext (if applicable): " + str(fileExt))
 
     # view [v, view]
     if((commandParts[0].lower() == VALIDCMDS[2]) or (commandParts[0].lower() == VALIDCMDS[3])):
