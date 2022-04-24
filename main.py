@@ -1,4 +1,5 @@
-from operator import truediv
+from asyncio.windows_events import NULL
+from operator import length_hint, truediv
 import sys 
 from urllib.request import DataHandler
 from requests import get
@@ -18,6 +19,14 @@ import shlex
 #   v                                                           = 
 
 VALIDCMDS = ['m', 'msg', 'v', 'view', 's', 'settings', 'h', 'help', '?', 'q', 'quit', 'e', 'exit']
+
+# type of content that can be sent
+# -f = file; specify a file path in the next parameter
+# -m = text; specify plain text in the next parameter
+VALFMT = ['-f', '-t']
+
+# default port used by listening socket
+DFTPORT = 11083
 
 #######################################################################################################################################################
 
@@ -51,7 +60,7 @@ def firstTimeSetup():
     print('Please enter your nickname:')
     nick = input()
     print('Would you like to recieve messages on the default port (11083)?')
-    newPortNumber = 11083 
+    newPortNumber = DFTPORT 
 
     # get response
     portResponse = input()
@@ -67,6 +76,28 @@ def firstTimeSetup():
     # write port and name to settings
     with open('settings.json', 'w') as f:
         json.dump(userInfo, f)
+
+# check that IP address provided is valid
+def ipCheck(ipAddress):
+    subBlocks = ipAddress.split('.')
+    # bad IP if not exactly 4 blocks
+    if(length_hint(subBlocks) != 4):
+        return False
+    for block in subBlocks:
+        if(not str(block).isnumeric() or int(block) > 255):
+            return False
+    
+    # if valid return true
+    return True
+
+# check that the provided port is valid
+def portCheck(portnumber):
+    if(not str(portnumber).isnumeric()):
+        return False
+    if(int(portnumber) > 65535 or int(portnumber < 1024)):
+        return False
+    return True
+
 
 #######################################################################################################################################################
 
@@ -102,15 +133,52 @@ while(runFlag):
 
     # split input at spaces to get command + arguments
     commandParts = shlex.split(inputstring)
-    print(commandParts)
+    #print(commandParts)
+
     # if valid command proceed
     if(commandParts[0].lower() not in VALIDCMDS):
-        print(commandParts[0].lower(), "is not a recognized command")
+        print(commandParts[0].lower(), " is not a recognized command")
 
     # if valid command, execute command
     # msg [m, msg]
     if((commandParts[0].lower() == VALIDCMDS[0]) or (commandParts[0].lower() == VALIDCMDS[1])):
-        print('send message')
+        # msg needs 4 or 5 arguments; stop processing if not met
+        numArg = length_hint(commandParts)
+        if(numArg > 5 or numArg < 4):
+            print(inputstring + ' is not a valid "m" command')
+            continue;
+
+        # break up destination information
+        destInfo = str(commandParts[1]).split(':')
+        ipArgs = length_hint(destInfo)
+
+        # stop if bad input
+        if(ipArgs > 2):
+            print('Invalid IP:Port combination.')
+            continue;
+
+        # stop if invalid IP address
+        if(not ipCheck(str(destInfo[0]))):
+            print(destInfo[0] + ' is not a valid IP address')
+            continue;
+
+        # if valid, see if there is a port and check if it is valid
+        if(ipArgs == 2):
+            if(not portCheck(destInfo[1])):
+                print(destInfo[1] + ' is not a valid port number')
+                continue;
+
+        # check type of message
+        msgFmt = commandParts[2].lower()
+        if(msgFmt not in VALFMT):
+            print(commandParts[2] + "is not a valid argument for the type of content to send")
+
+        # handle -t = text
+        fileExt = NULL
+        if(msgFmt == '-t'):
+            print('text input')
+        if(msgFmt == '-f'):
+            print('fileInput')
 
     # view [v, view]
     if((commandParts[0].lower() == VALIDCMDS[2]) or (commandParts[0].lower() == VALIDCMDS[3])):
@@ -126,6 +194,7 @@ while(runFlag):
 
     # quit [q, quit, e, exit]
     if((commandParts[0].lower() == VALIDCMDS[9]) or (commandParts[0].lower() == VALIDCMDS[10]) or (commandParts[0].lower() == VALIDCMDS[11]) or (commandParts[0].lower() == VALIDCMDS[12])):
+        # kill the program
         runFlag = False
 
-# kill all sockets/threads
+# kill all sockets/threads after this point
