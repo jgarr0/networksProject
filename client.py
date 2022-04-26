@@ -50,5 +50,3 @@ def dataSend(dataDict):
     client.close()
 
     return
-
-dataSend()
