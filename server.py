@@ -56,21 +56,10 @@ def dataReceive():
 
                 # Process the obtained JSON data to give us a dictionary again
                 receivedDict = json.loads(fullMsg)
-                print(f"The results:\n{receivedDict}")
 
                 # Update dictionary with the IP address to use for responses
                 receivedDict.update(responseIP)
-                print(f"The results v2:\n{receivedDict}")
-
-                # Detect if passed data is file. If so, deserialize. Else, assume we've received text
-                if not receivedDict.get("fileType") == "NULL":
-                    dataDecrypted = receivedDict.get("encryptedData") # ~~ DECRYPT DATA HERE - PASS encryptedData and encryptedKey, RETURN decrypted data ~~
-                    
-                    file = open(str(f"receivedFile." + receivedDict.get("fileType")), "wb") # write file as binary
-                    file.write(dataDecrypted)
-                    file.close()
-                else:
-                    dataDecrypted = receivedDict.get("encryptedData")
+                print(f"Received JSON data:\n{receivedDict}")
 
                 # Write JSON to file
                 with open('receivedData.json', 'w') as json_file:
