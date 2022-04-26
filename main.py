@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
 from cgi import test
+from http import server
 from operator import length_hint, truediv   # get length of lists
 import sys 
 from urllib.request import DataHandler
@@ -7,9 +8,12 @@ from requests import get                    # get current IP
 from os.path import exists                  # check that files exist
 
 # other impots
+import threading
 import json                                 # json file support + associated functions                               
 import shlex                                # command parsing to preserve substrings
 import time                                 # get time that message was created for indexing
+import client
+import server
 
 #######################################################################################################################################################
 
@@ -33,9 +37,6 @@ VALFMT = ['-f', '-t']
 DFTPORT = 11083
 
 #######################################################################################################################################################
-
-# header
-print('################################\nPeer to Peer Encrypted Messanger\n################################\n')
 
 # code from https://www.ipify.org/
 def getPublicIP():
@@ -163,6 +164,9 @@ def printHelp():
 
 #######################################################################################################################################################
 
+# header- cool ascii art?
+print('################################\nPeer to Peer Encrypted Messanger\n################################\n')
+
 # do not run setup if settings file exists
 # https://www.pythontutorial.net/python-basics/python-check-if-file-exists/
 if(exists('settings.json') == False):
@@ -199,16 +203,17 @@ print('\tCurrently receiving on port:', currentPort)
 print('##########################################\n')
 
 # create listening socket on its own thread here
-# want to place incoming messages into a list in memory- thoughts?
-
+listenThread = threading.Thread(target=server.dataReceive, daemon=True)
+listenThread.start()
 
 # begin main program loop
 runFlag = True
 while(runFlag):
+
     # check to see if listening socket has anything 
     inputstring = str(input(name + "> "))
 
-
+    # dotn accept empty input or pure white space input
     if(inputstring != NULL and inputstring.isspace() == False):
         # split input at spaces to get command + arguments
         commandParts = shlex.split(inputstring)
@@ -330,8 +335,9 @@ while(runFlag):
             # store time sent, dest IP, despPort, and encryptedKey
             sentMessages.append({encrPacket['timeSent'], encrPacket['destinationIP'], encrPacket['destinationPort'], encrPacket['encryptedKey']})
             #print(sentMessages)
-            
+
             # send with socket here
+            client.dataSend(encrPacket)
 
         # list [l, list]
         if((commandParts[0].lower() == VALIDCMDS[11]) or (commandParts[0].lower() == VALIDCMDS[12])):
