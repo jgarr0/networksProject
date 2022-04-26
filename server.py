@@ -12,7 +12,7 @@ server.listen(5)
 
 HEADERSIZE = 10
 
-def dataReceive():
+def dataReceive(dest):
     while True:
         # Accept a new connection
         clientConn, clientAddress = server.accept() 
@@ -68,10 +68,17 @@ def dataReceive():
                 # Reset message size back to zero, will also break us out of the while loop
                 msgSize = 0 
 
+        # save recieved information back in dict
+        print(receivedDict['timeSent'])
+        dest.append({
+            'timeSent':receivedDict['timeSent'],
+            "responseIP":receivedDict['responseIP'],
+            "responsePort":receivedDict['responsePort'],
+            "encryptedMessage":receivedDict['encryptedMessage'],
+            "encryptedKey":receivedDict['encryptedKey']})
+
         # Close connection
         clientConn.close()
         print('Client disconnected')
 
     return
-
-dataReceive()

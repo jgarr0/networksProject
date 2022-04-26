@@ -28,7 +28,7 @@ def dataSend(dataDict):
     # Connect to peer via socket
     print("Establishing socket")
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPv4/TCP socket
-    client.connect((serverIP, serverPort))
+    client.connect((serverIP, int(serverPort)))
 
     # Create a JSON with all of the data to send to the server
     dataJSON = json.dumps(dataDict)

@@ -14,6 +14,7 @@ import shlex                                # command parsing to preserve substr
 import time                                 # get time that message was created for indexing
 import client
 import server
+from datetime import datetime, timezone
 
 #######################################################################################################################################################
 
@@ -33,8 +34,13 @@ VALIDCMDS = ['m', 'msg', 'v', 'view', 'h', 'help', '?', 'q', 'quit', 'e', 'exit'
 # -m = text; specify plain text in the next parameter
 VALFMT = ['-f', '-t']
 
+# type of content to be viewed
+# -s = view sent messages
+# -r = view received messages
+VALVIEW = ['-s', '-r']
+
 # default port used by listening socket
-DFTPORT = 11083
+DFTPORT = 8080
 
 #######################################################################################################################################################
 
@@ -72,7 +78,7 @@ def firstTimeSetup():
     newPortNumber = DFTPORT 
 
     # get response
-    portResponse = input('Would you like to recieve messages on the default port (11083)? ')
+    portResponse = input('Would you like to recieve messages on the default port (8080)? ')
     if(portResponse != 'y' and portResponse != 'yes'):
         newPortNumber = newPort()
 
@@ -203,7 +209,8 @@ print('\tCurrently receiving on port:', currentPort)
 print('##########################################\n')
 
 # create listening socket on its own thread here
-listenThread = threading.Thread(target=server.dataReceive, daemon=True)
+# pass thread the list for recieved messages
+listenThread = threading.Thread(target=server.dataReceive, args=(receivedMessages,), daemon=True)
 listenThread.start()
 
 # begin main program loop
@@ -213,8 +220,8 @@ while(runFlag):
     # check to see if listening socket has anything 
     inputstring = str(input(name + "> "))
 
-    # dotn accept empty input or pure white space input
-    if(inputstring != NULL and inputstring.isspace() == False):
+    # do not accept empty input or pure white space input
+    if(inputstring != NULL and inputstring.isspace() == False and inputstring != ''):
         # split input at spaces to get command + arguments
         commandParts = shlex.split(inputstring)
         #print(commandParts)
@@ -321,7 +328,7 @@ while(runFlag):
             # encrypt key here
 
             # create dict here
-            encrPacket = {
+            encrPacket= {
                 "timeSent" : sendTime,
                 "responseIP" : "NULL",
                 "responsePort" : currentPort,
@@ -333,16 +340,56 @@ while(runFlag):
             }
 
             # store time sent, dest IP, despPort, and encryptedKey
-            sentMessages.append({encrPacket['timeSent'], encrPacket['destinationIP'], encrPacket['destinationPort'], encrPacket['encryptedKey']})
-            #print(sentMessages)
-
+            sentMessages.append({"timeSent":encrPacket['timeSent'], 'destinationIP':encrPacket['destinationIP'], 'destinationPort':encrPacket['destinationPort'], 'encryptedKey':encrPacket['encryptedKey']})
+            
             # send with socket here
             client.dataSend(encrPacket)
 
         # list [l, list]
         if((commandParts[0].lower() == VALIDCMDS[11]) or (commandParts[0].lower() == VALIDCMDS[12])):
-            print('list all messages')
-            # display indexed list of all IPs that a message was sent to or received from (maybe date/time and name too)?
+            # msg needs 2; stop processing if not met
+            numArg = length_hint(commandParts)
+            if(numArg != 2):
+                print("Please specify if you want to view sent or recieved messages")
+                continue;
+            
+            # view sent messages
+            if(commandParts[1].lower() == VALVIEW[0]):
+                numSentMsg = length_hint(sentMessages)
+                if(numSentMsg == 0):
+                    print("No sent messages!")
+                    continue;
+                
+                # index for messages
+                sendIndex = 0
+
+                # display relevant information
+                print(str(numSentMsg) + " sent messages:")
+                while sendIndex < numSentMsg:
+                    print("\t" + str(int(sendIndex) + 1) + " || " + str(datetime.fromtimestamp(int(sentMessages[sendIndex]["timeSent"]), timezone.utc)) + " || " + sentMessages[sendIndex]["destinationIP"])
+                    sendIndex = sendIndex + 1
+
+            # view recieved messages             
+            elif(commandParts[1].lower() == VALVIEW[1]):
+                # index received messages
+                numRecMsg = length_hint(receivedMessages)
+                if(numRecMsg == 0):
+                    print("No received messages!")
+                    continue;
+                
+                # index for messages
+                receiveIndex = 0
+
+                # display relevant information
+                print(str(numRecMsg) + " recieved messages:")
+                while receiveIndex < numRecMsg:
+                    print("\t" + str(int(receiveIndex) + 1) + " || " + str(datetime.fromtimestamp(int(receivedMessages[receiveIndex]["timeSent"]), timezone.utc)) + " || " + receivedMessages[receiveIndex]["responseIP"])
+                    receiveIndex = receiveIndex + 1
+
+            # error for no type of messages specified
+            else:
+                print("Please specify if you want to view sent or recieved messages")
+                continue;
 
         # view [v, view]
         if((commandParts[0].lower() == VALIDCMDS[2]) or (commandParts[0].lower() == VALIDCMDS[3])):
@@ -366,3 +413,4 @@ while(runFlag):
             runFlag = False
 
 # kill all sockets/threads after this point
+# |------> thread is set as a daemon- dies on program termination
