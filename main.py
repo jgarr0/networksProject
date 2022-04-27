@@ -293,7 +293,7 @@ while(runFlag):
                         print("Can not determine file extension from the provided path")
                         continue;
                     fileInput = open(commandParts[3], 'rb')
-                    dataToSend = fileInput.read()
+                    dataToSend = str(fileInput.read())
 
             # key check
             currentKey = NULL
