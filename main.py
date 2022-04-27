@@ -2,19 +2,33 @@ from asyncio.windows_events import NULL
 from cgi import test
 from http import server
 from operator import length_hint, truediv   # get length of lists
-import sys 
+import sys
 from urllib.request import DataHandler
 from requests import get                    # get current IP
 from os.path import exists                  # check that files exist
 
 # other impots
 import threading
-import json                                 # json file support + associated functions                               
+import json                                 # json file support + associated functions
 import shlex                                # command parsing to preserve substrings
 import time                                 # get time that message was created for indexing
 import client
 import server
 from datetime import datetime, timezone
+
+# crypto imports
+import secrets
+from base64 import urlsafe_b64encode as b64e, urlsafe_b64decode as b64d
+
+from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+backend = default_backend()
+
+# number of iterations to run crypto algorithm
+iterations = 100_000
 
 #######################################################################################################################################################
 
@@ -75,7 +89,7 @@ def newPort():
 def firstTimeSetup():
     #begin setup
     nick = input('Please enter your nickname: ')
-    newPortNumber = DFTPORT 
+    newPortNumber = DFTPORT
 
     # get response
     portResponse = input('Would you like to recieve messages on the default port (8080)? ')
@@ -104,7 +118,7 @@ def firstTimeSetup():
     # display commands
     print('################################')
     printHelp()
-    
+
 # check that IP address provided is valid
 def ipCheck(ipAddress):
     subBlocks = ipAddress.split('.')
@@ -114,7 +128,7 @@ def ipCheck(ipAddress):
     for block in subBlocks:
         if(not str(block).isnumeric() or int(block) > 255):
             return False
-    
+
     # if valid return true
     return True
 
@@ -137,6 +151,33 @@ def getExt(filePath):
         return NULL
     else:
         return splitPath[numPathArgs-1]
+
+# Derive a secret key from a given password and salt
+def _derive_key(password: bytes, salt: bytes, iterations: int = iterations) -> bytes:
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(), length=32, salt=salt,
+        iterations=iterations, backend=backend)
+    return b64e(kdf.derive(password))
+
+# encrypt message with key
+def password_encrypt(message: bytes, password: str, iterations: int = iterations) -> bytes:
+    salt = secrets.token_bytes(16)
+    key = _derive_key(password.encode(), salt, iterations)
+    return b64e(
+        b'%b%b%b' % (
+            salt,
+            iterations.to_bytes(4, 'big'),
+            b64d(Fernet(key).encrypt(message)),
+        )
+    )
+
+# decrypt message from key
+def password_decrypt(token: bytes, password: str) -> bytes:
+    decoded = b64d(token)
+    salt, iter, token = decoded[:16], decoded[16:20], b64e(decoded[20:])
+    iterations = int.from_bytes(iter, 'big')
+    key = _derive_key(password.encode(), salt, iterations)
+    return Fernet(key).decrypt(token)
 
 # print all supported commands
 def printHelp():
@@ -217,7 +258,7 @@ listenThread.start()
 runFlag = True
 while(runFlag):
 
-    # check to see if listening socket has anything 
+    # check to see if listening socket has anything
     inputstring = str(input(name + "> "))
 
     # do not accept empty input or pure white space input
@@ -323,9 +364,9 @@ while(runFlag):
             # if we are here, can open a socket and send the message
             # all required info is here
 
-            # encrypt data here
-
-            # encrypt key here
+            # encrypts data and key here
+            # just double check these are the correct variables for message and key.
+            #encrpyted_message = password_encrypt(dataToSend.encode(), currentKey)
 
             # create dict here
             encrPacket= {
@@ -341,7 +382,7 @@ while(runFlag):
 
             # store time sent, dest IP, despPort, and encryptedKey
             sentMessages.append({"timeSent":encrPacket['timeSent'], 'destinationIP':encrPacket['destinationIP'], 'destinationPort':encrPacket['destinationPort'], 'encryptedKey':encrPacket['encryptedKey']})
-            
+
             # send with socket here
             client.dataSend(encrPacket)
 
@@ -352,14 +393,14 @@ while(runFlag):
             if(numArg != 2):
                 print("Please specify if you want to view sent or recieved messages")
                 continue;
-            
+
             # view sent messages
             if(commandParts[1].lower() == VALVIEW[0]):
                 numSentMsg = length_hint(sentMessages)
                 if(numSentMsg == 0):
                     print("No sent messages!")
                     continue;
-                
+
                 # index for messages
                 sendIndex = 0
 
@@ -369,14 +410,14 @@ while(runFlag):
                     print("\t" + str(int(sendIndex) + 1) + " || " + str(datetime.fromtimestamp(int(sentMessages[sendIndex]["timeSent"]), timezone.utc)) + " || " + sentMessages[sendIndex]["destinationIP"])
                     sendIndex = sendIndex + 1
 
-            # view recieved messages             
+            # view recieved messages
             elif(commandParts[1].lower() == VALVIEW[1]):
                 # index received messages
                 numRecMsg = length_hint(receivedMessages)
                 if(numRecMsg == 0):
                     print("No received messages!")
                     continue;
-                
+
                 # index for messages
                 receiveIndex = 0
 
