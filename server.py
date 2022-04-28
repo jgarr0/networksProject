@@ -51,7 +51,7 @@ def dataReceive(receivedMessage, receivedACK):
                 #print(fullMsgPickled)
                 #print ("-----------------------------\n")
 
-                #fullMsg = pickle.loads(fullMsgPickled)
+                fullMsg = pickle.loads(fullMsgPickled)
                 #print ("---------- MESSAGE (Unpickled): ---------")
                 #print(fullMsg)
                 #print ("-----------------------------\n")
