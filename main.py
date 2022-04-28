@@ -449,7 +449,7 @@ while(runFlag):
             key = str(commandParts[2])
             dataType = receivedMessages[selectedIndex]['dataType']
 
-            # Get message tocken length and create substring that removes b' '
+            # Get message token length and create substring that removes b' '
             encryptedMsg = str(receivedMessages[selectedIndex]['encryptedMessage'])
             endChar = len(encryptedMsg) - 1
             encryptedMsgSubstr = encryptedMsg[2:endChar]
@@ -485,11 +485,11 @@ while(runFlag):
                 print(f"File received from {receivedMessages[selectedIndex]['responseIP']}.")
                 fileSaveName = input("Enter a file name to save: ")
 
-                if not fileSaveName.contains("."):
+                if not "." in fileSaveName:
                     fileSaveName = fileSaveName + "." + dataType
                 
                 file = open(fileSaveName, "wb") # write file as binary
-                file.write(decrypted_message)
+                file.write(decrypted_message.encode())
                 file.close()
 
                 print(f"File saved to: .\{fileSaveName}")
