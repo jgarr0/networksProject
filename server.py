@@ -81,6 +81,7 @@ def dataReceive(receivedMessage, receivedACK):
         else:
             receivedMessage.append({
                 'timeSent':receivedDict['timeSent'],
+                "maxAttempts":receivedDict['maxAttempts'],
                 "responseIP":receivedDict['responseIP'],
                 "responsePort":receivedDict['responsePort'],
                 "encryptedMessage":receivedDict['encryptedMessage'],

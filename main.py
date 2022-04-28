@@ -104,11 +104,21 @@ def firstTimeSetup():
         else:
             print('The default key can not be empty')
 
+    defaultAttempts = NULL
+    while(defaultAttempts == NULL):
+        testInput = input('What would you like the default number of attempts to decrypt messages that you send to be? ')
+        # valid input conditions
+        if(int(testInput) > 0 and int(testInput) < 101) and testInput.isnumeric() == True:
+            defaultAttempts = testInput
+        else:
+            print('The default number of attempts to decrypt messages must be between 1 and 100')
+
     # json struct for user info
     userInfo = {
         "name" : nick,
         "defaultPort" : newPortNumber,
-        "defaultKey" : defaultKey
+        "defaultKey" : defaultKey,
+        "defaultAttempts" : defaultAttempts
     }
 
     # write port and name to settings
@@ -231,6 +241,7 @@ f.close()
 name = userInfo['name']
 currentPort = userInfo['defaultPort']
 DFTKEY = userInfo["defaultKey"]
+DFTATTEMPTS = userInfo["defaultAttempts"]
 
 # lists to store message information
 # list for sent messages
@@ -279,7 +290,7 @@ while(runFlag):
         if((commandParts[0].lower() == VALIDCMDS[0]) or (commandParts[0].lower() == VALIDCMDS[1])):
             # msg needs 4 or 5 arguments; stop processing if not met
             numArg = length_hint(commandParts)
-            if(numArg > 5 or numArg < 4):
+            if(numArg > 6 or numArg < 4):
                 print(inputstring + ' is not a valid "m" command')
                 continue;
 
@@ -342,25 +353,70 @@ while(runFlag):
             # key check
             currentKey = NULL
 
-            # if no key provided, use default key
+            # check optional paramaeters
+
+            # if 4 parameters, use default key and default number of attempts
             if(numArg == 4):
                 currentKey = str(DFTKEY)
+                numAttempts = str(DFTATTEMPTS)
 
-            # if a key is provided, ensure that it is correct
+            # if 1 optional argument, could be the key or the number of attempts
             if(numArg == 5):
-                # check that provided key is not whitespace
-                if(str(commandParts[4]).isspace()):
-                    print("Provided key can not be only whitespace")
+                # determine if key or nuymber of tries
+                argLength = commandParts[4].len()
+
+                # if enclosed with parenthesis, argument is the key
+                if((commandParts[4][0] == '"' and commandParts[4][argLength-1] == '"') or (commandParts[4][0] == '\'' and commandParts[4][argLength-1] == '\'')):
+                    # check that provided key is not whitespace
+                    if(str(commandParts[4]).isspace()):
+                        print("Provided key can not be only whitespace")
+                        continue;
+
+                    # check that provided key field is not empty
+                    if(str(commandParts[4]) == ""):
+                        print("Provided key can not be empty")
+                        continue;
+
+                    # if valid, use entered key
+                    currentKey = str(commandParts[4])
+                    numAttempts = str(DFTATTEMPTS)  
+
+                # otherwise, argument is the number of attempts
+                else:
+                    if(str(commandParts[4]).isnumeric() == True and () > 0 and (int(commandParts[4]) < 101 and int(commandParts[4]) > 1)):
+                        numAttempts = str(commandParts[4])  
+                        currentKey = str(DFTKEY)
+
+                    # stop if bad argument
+                    else:
+                        continue;
+
+            # if both optional arguments, ensure that they are in the correct order and that they are valid
+            if(numArg == 6):
+                # make sure first argument is the key
+                if((commandParts[4][0] == '"' and commandParts[4][argLength-1] == '"') or (commandParts[4][0] == '\'' and commandParts[4][argLength-1] == '\'')):
+                    # check that provided key is not whitespace
+                    if(str(commandParts[4]).isspace()):
+                        print("Provided key can not be only whitespace")
+                        continue;
+
+                    # check that provided key field is not empty
+                    if(str(commandParts[4]) == ""):
+                        print("Provided key can not be empty")
+                        continue;
+
+                    # if here, provided key is acceptable
+                    currentKey = str(commandParts[4])
+
+                # make sure that the number of tries is valid
+                if(str(commandParts[5]).isnumeric() == True and () > 0 and (int(commandParts[5]) < 101 and int(commandParts[5]) > 1)):
+                    numAttempts = str(commandParts[5])  
+
+                # stop if bad argument
+                else:
                     continue;
-
-                # check that provided key field is not empty
-                if(str(commandParts[4]) == ""):
-                    print("Provided key can not be empty")
-                    continue;
-
-                # if valid, use entered key
-                currentKey = str(commandParts[4])
-
+                # make sure second argument is the number of attempts
+                    
             # get time that the message was sent
             sendTime = int(time.time())
 
@@ -375,17 +431,18 @@ while(runFlag):
             # create dict here
             encrPacket= {
                 "timeSent" : sendTime,
+                "maxAttempts" : numAttempts,
                 "responseIP" : "NULL",
                 "responsePort" : currentPort,
                 "destinationIP" : destIP,
                 "destinationPort" : destPort,
-                "encryptedMessage": encrpyted_message,                 # TODO replace with encrypted data
-                "encryptedKey" : encrypted_key,                    # TODO replace with encrypted key
+                "encryptedMessage": encrpyted_message,
+                "encryptedKey" : encrypted_key,
                 "dataType": fileExt
             }
 
             # store time sent, dest IP, despPort, and encryptedKey
-            sentMessages.append({"timeSent":encrPacket['timeSent'], 'destinationIP':encrPacket['destinationIP'], 'destinationPort':encrPacket['destinationPort'], 'encryptedKey':encrPacket['encryptedKey'], 'dataType':encrPacket['dataType']})
+            sentMessages.append({"timeSent":encrPacket['timeSent'], "maxAttempts":encrPacket['maxAttempts'],'destinationIP':encrPacket['destinationIP'], 'destinationPort':encrPacket['destinationPort'], 'encryptedKey':encrPacket['encryptedKey'], 'dataType':encrPacket['dataType']})
 
             # send with socket here
             client.dataSend(encrPacket)
@@ -500,10 +557,6 @@ while(runFlag):
     
             # Delete dictionary entry since message has been decrypted/viewed
             del receivedMessages[selectedIndex]
-
-        # settings [settings, s]
-        #if((commandParts[0].lower() == VALIDCMDS[4]) or (commandParts[0].lower() == VALIDCMDS[5])):
-        #    print('change settings')
 
         # help [h, help, q]
         if((commandParts[0].lower() == VALIDCMDS[4]) or (commandParts[0].lower() == VALIDCMDS[5]) or (commandParts[0].lower() == VALIDCMDS[6])):
