@@ -173,6 +173,9 @@ def password_encrypt(message: bytes, password: str, iterations: int = iterations
 
 # decrypt message from key
 def password_decrypt(token: bytes, password: str) -> bytes:
+    print(type(token))
+    print(token)
+    print(password)
     decoded = b64d(token)
     salt, iter, token = decoded[:16], decoded[16:20], b64e(decoded[20:])
     iterations = int.from_bytes(iter, 'big')
@@ -366,7 +369,8 @@ while(runFlag):
 
             # encrypts data and key here
             # just double check these are the correct variables for message and key.
-            #encrpyted_message = password_encrypt(dataToSend.encode(), currentKey)
+            encrpyted_message = str(password_encrypt(dataToSend.encode(), currentKey))
+            encrypted_key = str(password_encrypt(currentKey.encode(), str(sendTime)))
 
             # create dict here
             encrPacket= {
@@ -375,8 +379,8 @@ while(runFlag):
                 "responsePort" : currentPort,
                 "destinationIP" : destIP,
                 "destinationPort" : destPort,
-                "encryptedMessage": dataToSend,                 # TODO replace with encrypted data
-                "encryptedKey" : currentKey,                    # TODO replace with encrypted key
+                "encryptedMessage": encrpyted_message,                 # TODO replace with encrypted data
+                "encryptedKey" : encrypted_key,                    # TODO replace with encrypted key
                 "dataType": fileExt
             }
 
@@ -391,7 +395,7 @@ while(runFlag):
             # msg needs 2; stop processing if not met
             numArg = length_hint(commandParts)
             if(numArg != 2):
-                print("Please specify if you want to view sent or recieved messages")
+                print("Please specify if you want to view sent or received messages")
                 continue;
 
             # view sent messages
@@ -438,7 +442,24 @@ while(runFlag):
             # decrypt a message by its index
             # remove dict with matching time index - https://www.geeksforgeeks.org/python-removing-dictionary-from-list-of-dictionaries/
             #sentMessages = [i for i in sentMessages if not (i['timeSent'] == sendTime)]
-            print(sentMessages)
+
+            # load in flags from command
+            selectedIndex = int(commandParts[1])
+            fileName = str(commandParts[2])
+            key = str(commandParts[3])
+
+            encryptedMsg = str(receivedMessages[selectedIndex]['encryptedMessage'])
+            encryptedMsgSubstr = encryptedMsg[2:126]
+
+            decrypted_message = str(password_decrypt(encryptedMsgSubstr.encode(), key))
+            print(f"THIS IS THE MESSAGE: {decrypted_message}")
+
+            # display relevant information
+            #while receiveIndex < numRecMsg:
+            #    print("\t" + str(int(receiveIndex) + 1) + " || " + str(datetime.fromtimestamp(int(receivedMessages[receiveIndex]["timeSent"]), timezone.utc)) + " || " + receivedMessages[receiveIndex]["responseIP"])
+            #    receiveIndex = receiveIndex + 1
+
+            del receivedMessages[selectedIndex]
 
         # settings [settings, s]
         #if((commandParts[0].lower() == VALIDCMDS[4]) or (commandParts[0].lower() == VALIDCMDS[5])):

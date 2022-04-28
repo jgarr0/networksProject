@@ -27,6 +27,7 @@ def dataReceive(dest):
             # Our protocol says the client will send the message size appended to beginning of string
             if newMsg:
                 data = clientConn.recv(HEADERSIZE)
+                print(f"DATA SIZE:{data}")
                 msgSize = int(data)
                 print(f"Message length to receive: {msgSize}")
                 newMsg = False
@@ -76,6 +77,9 @@ def dataReceive(dest):
             "responsePort":receivedDict['responsePort'],
             "encryptedMessage":receivedDict['encryptedMessage'],
             "encryptedKey":receivedDict['encryptedKey']})
+
+        # TEMP
+        print(dest)
 
         # Close connection
         clientConn.close()
