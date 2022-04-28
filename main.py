@@ -602,13 +602,13 @@ while(runFlag):
                     del receivedMessages[selectedIndex]
                 else:
                     print(f"File received from {receivedMessages[selectedIndex]['responseIP']}.")
-                    fileSaveName = input("Enter a file name to save: ")
-
-                    if not fileSaveName.contains("."):
-                        fileSaveName = fileSaveName + "." + dataType
+                    fileSaveName = input("Enter a file name to save (without the extension): ")
+                    
+                    # append extension
+                    fileSaveName = fileSaveName + "." + dataType
                     
                     file = open(fileSaveName, "wb") # write file as binary
-                    file.write(decrypted_message)
+                    file.write(decrypted_message.encode('utf-8'))
                     file.close()
 
                     print(f"File saved to: .\{fileSaveName}")
