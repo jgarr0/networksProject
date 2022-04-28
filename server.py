@@ -78,7 +78,7 @@ def dataReceive(dest):
             "encryptedMessage":receivedDict['encryptedMessage'],
             "encryptedKey":receivedDict['encryptedKey'],
             "dataType":receivedDict['fileExt']})
-
+            
         # TEMP
         print(dest)
 

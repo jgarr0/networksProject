@@ -247,9 +247,9 @@ receivedACK = []
 
 # display current public IP and defined port
 print('##########################################')
-print('welcome ' + name + '!')
-print('\tYour Public IP is:', getPublicIP())
-print('\tCurrently receiving on port:', currentPort)
+print('\nwelcome ' + name + '!\n')
+#print('\tYour Public IP is:', getPublicIP())
+#print('\tCurrently receiving on port:', currentPort)
 print('##########################################\n')
 
 # create listening socket on its own thread here
