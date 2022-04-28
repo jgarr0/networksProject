@@ -64,18 +64,18 @@ DFTPORT = 8080
 
 # assign the default port
 def newPort():
-    print("Enter a new port to recieve messages on:")
+    print("Enter a new port to receive messages on:")
     portFlag = True
     while(portFlag):
         newPortNum = input()
         #discard non numeric input
         alphaPort = newPortNum.isnumeric()
         if(alphaPort == False):
-            print('Ports can not contian characters!')
+            print('Ports can not contain characters!')
         else:
             # invalid port range
             if(int(newPortNum) < 1024 or int(newPortNum) > 65535):
-                print('Ports can be between 1023 and 65535')
+                print('Ports can be between 1024 and 65535')
             else:
                 print('New port number is', newPortNum)
                 portFlag = False
@@ -215,7 +215,7 @@ def printHelp():
 #######################################################################################################################################################
 
 # header- cool ascii art?
-print('################################\nPeer to Peer Encrypted Messanger\n################################\n')
+print('################################\nPeer to Peer Encrypted Messenger\n################################\n')
 
 # do not run setup if settings file exists
 # https://www.pythontutorial.net/python-basics/python-check-if-file-exists/
@@ -247,7 +247,7 @@ receivedACK = []
 
 # display current public IP and defined port
 print('##########################################')
-print('\nwelcome ' + name + '!\n')
+print('\nWelcome ' + name + '!\n')
 #print('\tYour Public IP is:', getPublicIP()) --> unneeded
 #print('\tCurrently receiving on port:', currentPort) --> unneeded
 print('##########################################\n')
@@ -395,7 +395,7 @@ while(runFlag):
             # msg needs 2; stop processing if not met
             numArg = length_hint(commandParts)
             if(numArg != 2):
-                print("Please specify if you want to view sent or received messages")
+                print(f"Please specify if you want to view sent ({VALIDCMDS[11]} {VALVIEW[0]}) or received ({VALIDCMDS[11]} {VALVIEW[1]}) messages")
                 continue;
 
             # view sent messages
@@ -433,7 +433,7 @@ while(runFlag):
 
             # error for no type of messages specified
             else:
-                print("Please specify if you want to view sent or recieved messages")
+                print("Please specify if you want to view sent or received messages")
                 continue;
 
         # decrypt [d, decrypt]
@@ -477,7 +477,7 @@ while(runFlag):
             decrypted_message = str(password_decrypt(encryptedMsgSubstr.encode(), key))
 
             # If text, display in console. Else, assume file and ask for file name to write
-            if dataType == NULL:
+            if dataType == NULL or 0:
                 print(f"Message from {receivedMessages[selectedIndex]['responseIP']}: {decrypted_message}")
             else:
                 print(f"File received from {receivedMessages[selectedIndex]['responseIP']}.")
