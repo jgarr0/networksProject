@@ -385,7 +385,7 @@ while(runFlag):
             }
 
             # store time sent, dest IP, despPort, and encryptedKey
-            sentMessages.append({"timeSent":encrPacket['timeSent'], 'destinationIP':encrPacket['destinationIP'], 'destinationPort':encrPacket['destinationPort'], 'encryptedKey':encrPacket['encryptedKey']})
+            sentMessages.append({"timeSent":encrPacket['timeSent'], 'destinationIP':encrPacket['destinationIP'], 'destinationPort':encrPacket['destinationPort'], 'encryptedKey':encrPacket['encryptedKey'], 'dataType':encrPacket['fileExt']})
 
             # send with socket here
             client.dataSend(encrPacket)
@@ -447,18 +447,30 @@ while(runFlag):
             selectedIndex = int(commandParts[1])
             fileName = str(commandParts[2])
             key = str(commandParts[3])
+            dataType = receivedMessages[selectedIndex]['dataType']
 
             encryptedMsg = str(receivedMessages[selectedIndex]['encryptedMessage'])
             encryptedMsgSubstr = encryptedMsg[2:126]
 
             decrypted_message = str(password_decrypt(encryptedMsgSubstr.encode(), key))
-            print(f"THIS IS THE MESSAGE: {decrypted_message}")
 
-            # display relevant information
-            #while receiveIndex < numRecMsg:
-            #    print("\t" + str(int(receiveIndex) + 1) + " || " + str(datetime.fromtimestamp(int(receivedMessages[receiveIndex]["timeSent"]), timezone.utc)) + " || " + receivedMessages[receiveIndex]["responseIP"])
-            #    receiveIndex = receiveIndex + 1
+            # If text, display in console. Else, assume file and ask for file name to write
+            if dataType == NULL:
+                print(f"Message from {receivedMessages[selectedIndex]['responseIP']}: {decrypted_message}")
+            else:
+                print(f"File received from {receivedMessages[selectedIndex]['responseIP']}.")
+                fileSaveName = input("Enter a file name to save: ")
 
+                if not fileSaveName.contains("."):
+                    fileSaveName = fileSaveName + "." + dataType
+                
+                file = open(fileSaveName, "wb") # write file as binary
+                file.write(decrypted_message)
+                file.close()
+
+                print(f"File saved to: .\{fileSaveName}")
+
+            # Delete dictionary entry since message has been decrypted/viewed
             del receivedMessages[selectedIndex]
 
         # settings [settings, s]
