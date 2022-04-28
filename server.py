@@ -76,8 +76,9 @@ def dataReceive(dest):
             "responseIP":receivedDict['responseIP'],
             "responsePort":receivedDict['responsePort'],
             "encryptedMessage":receivedDict['encryptedMessage'],
-            "encryptedKey":receivedDict['encryptedKey']})
-
+            "encryptedKey":receivedDict['encryptedKey'],
+            "dataType":receivedDict['fileExt']})
+            
         # TEMP
         print(dest)
 
