@@ -256,6 +256,74 @@ sentACK = []
 # list for receievd acks
 receivedACK = []
 
+# get number of decryption attempts
+def getAttemptCount(timeIndex):
+    # initalize count to 0
+    count = 0
+
+    # find number of ACKs corresponding to message
+    for x in receivedACK:
+        if(str(x["encryptTime"]).strip() == str(timeIndex).strip()):
+            count = count + 1
+
+    return count
+
+# return whether or not a message has been decrypted
+def getDecryptionStatus(timeSent):
+    # get sent message key
+    encryptedKey = NULL
+
+    # obtain encrypted key
+    for x in sentMessages:
+        if(x["timeSent"] == timeSent):
+            encryptedKeyString = x["encryptedKey"]
+            encryptedMsgSubstr = encryptedKeyString.rsplit('\'')
+            encryptedKey = encryptedMsgSubstr[1]
+
+    # compare recieved message key
+    for x in receivedACK:
+        if(str(x["encryptTime"]).strip() == str(timeSent).strip()):
+            # get meaningful content of recieved encrypted key
+            encryptedMsg = str(x["encryptedKey"])
+            encryptedMsgSubstr = encryptedMsg.rsplit('\'')
+            encryptedText = encryptedMsgSubstr[1]
+
+            print("ENCRYTPOED KEY")
+            print(str(encryptedText))
+
+            print("ENCRYPTED TIME")
+            print(str(x["encryptTime"]).strip())
+            try:
+                # decrypt recieved key with time that it was encrytped
+                testKey = password_decrypt(str(encryptedText), str(x["decryptTime"]).strip())
+                print("TESTKEY")
+                print(str(testKey))
+
+                # decrypt encrypted key with time message was sent
+                print(str(encryptedText))
+                realKey = password_decrypt(str(encryptedKey), str(timeSent).strip())
+                print("REALKEY")
+                print(str(realKey))
+
+            # if error
+            except:
+                print("Error checking keys") 
+
+            # if no error, successful decryption
+            else:
+                # compare decryption results
+                if(str(testKey) == str(realKey)):
+                    return str("Decrypted")
+                else:
+                    return str("Not decrypted") 
+
+    # if here, not in recievedACK
+    return str("Not decrypted")
+
+# return the number of attempts left ot decrypt the message
+def getRemainingAttempts(maxAttempts, currentAttempts):
+    return int(maxAttempts) - int(currentAttempts)
+
 # display current public IP and defined port
 print('##########################################')
 print('\nwelcome ' + name + '!\n')
@@ -363,7 +431,7 @@ while(runFlag):
             # if 1 optional argument, could be the key or the number of attempts
             if(numArg == 5):
                 # determine if key or nuymber of tries
-                argLength = commandParts[4].len()
+                argLength = len(commandParts[4])
 
                 # if enclosed with parenthesis, argument is the key
                 if((commandParts[4][0] == '"' and commandParts[4][argLength-1] == '"') or (commandParts[4][0] == '\'' and commandParts[4][argLength-1] == '\'')):
@@ -383,7 +451,7 @@ while(runFlag):
 
                 # otherwise, argument is the number of attempts
                 else:
-                    if(str(commandParts[4]).isnumeric() == True and () > 0 and (int(commandParts[4]) < 101 and int(commandParts[4]) > 1)):
+                    if(str(commandParts[4]).isnumeric() == True and (int(commandParts[4]) < 101 and int(commandParts[4]) > 1)):
                         numAttempts = str(commandParts[4])  
                         currentKey = str(DFTKEY)
 
@@ -394,7 +462,7 @@ while(runFlag):
             # if both optional arguments, ensure that they are in the correct order and that they are valid
             if(numArg == 6):
                 # make sure first argument is the key
-                if((commandParts[4][0] == '"' and commandParts[4][argLength-1] == '"') or (commandParts[4][0] == '\'' and commandParts[4][argLength-1] == '\'')):
+                if(commandParts[4].isnumeric() == False):
                     # check that provided key is not whitespace
                     if(str(commandParts[4]).isspace()):
                         print("Provided key can not be only whitespace")
@@ -409,7 +477,7 @@ while(runFlag):
                     currentKey = str(commandParts[4])
 
                 # make sure that the number of tries is valid
-                if(str(commandParts[5]).isnumeric() == True and () > 0 and (int(commandParts[5]) < 101 and int(commandParts[5]) > 1)):
+                if(str(commandParts[5]).isnumeric() == True and (int(commandParts[5]) < 101 and int(commandParts[5]) > 1)):
                     numAttempts = str(commandParts[5])  
 
                 # stop if bad argument
@@ -426,7 +494,16 @@ while(runFlag):
             # encrypts data and key here
             # just double check these are the correct variables for message and key.
             encrpyted_message = str(password_encrypt(dataToSend.encode(), currentKey))
+            
             encrypted_key = str(password_encrypt(currentKey.encode(), str(sendTime)))
+
+
+            print("KEY UNDER HERE")
+            print(str(currentKey))
+
+
+            print("TIME UNDER HERE")
+            print(str(sendTime))
 
             # create dict here
             encrPacket= {
@@ -467,8 +544,12 @@ while(runFlag):
 
                 # display relevant information
                 print(str(numSentMsg) + " sent messages:")
+                # index || datetimestamp || ip || number of total attempts || remaining attempts || decrypted yet
                 while sendIndex < numSentMsg:
-                    print("\t" + str(sendIndex) + " || " + str(datetime.fromtimestamp(int(sentMessages[sendIndex]["timeSent"]), timezone.utc)) + " || " + sentMessages[sendIndex]["destinationIP"])
+                    # get current attempts for message
+                    currentAttempts = int(getAttemptCount(sentMessages[sendIndex]["timeSent"]))
+                    # print info
+                    print("\t" + str(sendIndex) + " || " + str(datetime.fromtimestamp(int(sentMessages[sendIndex]["timeSent"]), timezone.utc)) + " || " + str(sentMessages[sendIndex]["destinationIP"]) + " || " + sentMessages[sendIndex]["maxAttempts"] + " || " + str(currentAttempts) + " || " + str(getRemainingAttempts(sentMessages[sendIndex]["maxAttempts"], currentAttempts)) + " || " + str(getDecryptionStatus(sentMessages[sendIndex]["timeSent"])))
                     sendIndex = sendIndex + 1
 
             # view recieved messages
@@ -485,7 +566,7 @@ while(runFlag):
                 # display relevant information
                 print(str(numRecMsg) + " recieved messages:")
                 while receiveIndex < numRecMsg:
-                    print("\t" + str(int(receiveIndex) + 1) + " || " + str(datetime.fromtimestamp(int(receivedMessages[receiveIndex]["timeSent"]), timezone.utc)) + " || " + receivedMessages[receiveIndex]["responseIP"])
+                    print("\t" + str(receiveIndex) + " || " + str(datetime.fromtimestamp(int(receivedMessages[receiveIndex]["timeSent"]), timezone.utc)) + " || " + receivedMessages[receiveIndex]["responseIP"])
                     receiveIndex = receiveIndex + 1
 
             # error for no type of messages specified
@@ -507,37 +588,62 @@ while(runFlag):
             dataType = receivedMessages[selectedIndex]['dataType']
 
             encryptedMsg = str(receivedMessages[selectedIndex]['encryptedMessage'])
-            encryptedMsgSubstr = encryptedMsg[2:126]
+            encryptedMsgSubstr = encryptedMsg.rsplit('\'')
+            print(encryptedMsgSubstr)
+            encryptedText = encryptedMsgSubstr[1]
 
-            # send ACK to receiver here
             # generate encrypted form of input key
-            encrypted_key = str(password_encrypt(key.encode(), str(receivedMessages[selectedIndex]['timeSent'])))
-
             # get time of attempted decryption
             decryptTime = int(time.time())
 
+            # encrypt key with current time
+            encrypted_key = str(password_encrypt(key.encode(), str(decryptTime)))
+
             # create dict here
             decrPacket= {
+                "encryptTime" : str(receivedMessages[selectedIndex]['timeSent']),
                 "decryptTime" : decryptTime,
                 "destinationIP" : str(receivedMessages[selectedIndex]['responseIP']),
                 "destinationPort" : str(receivedMessages[selectedIndex]['responsePort']),
-                "encryptedKey" : encrypted_key,
+                "encryptedKey" : str(encrypted_key),
                 "dataType": "attemptedDecryptionKeyNotARealFileExtension"                       # hardcoded joke file extension to indicate ACK packets
             }
 
             # store time sent, dest IP, despPort, and encryptedKey
-            sentACK.append({"decryptTime" : decrPacket['decryptTime'], "destinationIP" : decrPacket['destinationIP'], "destinationPort" : decrPacket['destinationPort'], "encryptedKey" : decrPacket['encryptedKey'], "dataType": decrPacket['dataType']})
+            sentACK.append({"encryptTime" : decrPacket['encryptTime'], "decryptTime" : decrPacket['decryptTime'], "destinationIP" : decrPacket['destinationIP'], "destinationPort" : decrPacket['destinationPort'], "encryptedKey" : decrPacket['encryptedKey'], "dataType": decrPacket['dataType']})
 
-            # send with socket here
+            # send ACK to  original sender here
             client.dataSend(decrPacket)
-
-            # attempt to decrypt the message\
+            # attempt to decrypt the message
             try:
-                decrypted_message = str(password_decrypt(encryptedMsgSubstr.encode(), key))
+                print("TRYING TO DECRYPT")
+                print("ENCRYPTED KEY")
+                print(encryptedMsg)
+                print("INPUT KEY")
+                print(key)
+                decrypted_message = str(password_decrypt(encryptedText.encode(), key))
+                print(str(decrypted_message))
 
+            # catch InvalidSignature error
+            except Exception as inst:
+                # delete dictionary entry if maximum number of attempts reached
+                entryCount = 1
+                for x in sentACK:
+                    print(str(x["encryptTime"]))
+                    if(str(x['encryptTime']) == str(receivedMessages[selectedIndex]['timeSent'])):
+                        entryCount = entryCount + 1
+            
+                # delete entry if max attempts exceeded
+                if(int(entryCount) > int(receivedMessages[selectedIndex]["maxAttempts"])):
+                    del receivedMessages[selectedIndex]
+    
+            else:
                 # If text, display in console. Else, assume file and ask for file name to write
-                if dataType == NULL:
+                if(dataType == NULL or dataType == '0'):
+                    print("RECEIVED TEXT")
                     print(f"Message from {receivedMessages[selectedIndex]['responseIP']}: {decrypted_message}")
+                    # Delete dictionary entry since message has been decrypted/viewed
+                    del receivedMessages[selectedIndex]
                 else:
                     print(f"File received from {receivedMessages[selectedIndex]['responseIP']}.")
                     fileSaveName = input("Enter a file name to save: ")
@@ -551,12 +657,8 @@ while(runFlag):
 
                     print(f"File saved to: .\{fileSaveName}")
             
-            # catch InvalidSignature error
-            except Exception as inst:
-                continue;
-    
-            # Delete dictionary entry since message has been decrypted/viewed
-            del receivedMessages[selectedIndex]
+                    # Delete dictionary entry since message has been decrypted/viewed
+                    del receivedMessages[selectedIndex]
 
         # help [h, help, q]
         if((commandParts[0].lower() == VALIDCMDS[4]) or (commandParts[0].lower() == VALIDCMDS[5]) or (commandParts[0].lower() == VALIDCMDS[6])):

@@ -74,6 +74,7 @@ def dataReceive(receivedMessage, receivedACK):
         if(receivedDict['dataType'] == "attemptedDecryptionKeyNotARealFileExtension"):
             receivedACK.append({
                 "decryptTime":receivedDict['decryptTime'],
+                "encryptTime":receivedDict['encryptTime'],
                 "encryptedKey":receivedDict['encryptedKey']
             })
 
