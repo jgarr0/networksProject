@@ -41,7 +41,7 @@ iterations = 100_000
 #######################################################################################################################################################
 
 # recognized commands
-VALIDCMDS = ['m', 'msg', 'v', 'view', 'h', 'help', '?', 'q', 'quit', 'e', 'exit', 'l', 'list']
+VALIDCMDS = ['m', 'msg', 'd', 'decrypt', 'h', 'help', '?', 'q', 'quit', 'e', 'exit', 'l', 'list']
 
 # type of content that can be sent
 # -f = file; specify a file path in the next parameter
@@ -58,9 +58,9 @@ DFTPORT = 8080
 
 #######################################################################################################################################################
 
-# code from https://www.ipify.org/
-def getPublicIP():
-    return get('https://api.ipify.org').text
+# code from https://www.ipify.org/ -> unneeded
+#def getPublicIP():
+#    return get('https://api.ipify.org').text
 
 # assign the default port
 def newPort():
@@ -248,13 +248,13 @@ receivedACK = []
 # display current public IP and defined port
 print('##########################################')
 print('\nwelcome ' + name + '!\n')
-#print('\tYour Public IP is:', getPublicIP())
-#print('\tCurrently receiving on port:', currentPort)
+#print('\tYour Public IP is:', getPublicIP()) --> unneeded
+#print('\tCurrently receiving on port:', currentPort) --> unneeded
 print('##########################################\n')
 
 # create listening socket on its own thread here
 # pass thread the list for recieved messages
-listenThread = threading.Thread(target=server.dataReceive, args=(receivedMessages,), daemon=True)
+listenThread = threading.Thread(target=server.dataReceive, args=(receivedMessages, receivedACK), daemon=True)
 listenThread.start()
 
 # begin main program loop
@@ -361,7 +361,7 @@ while(runFlag):
                 # if valid, use entered key
                 currentKey = str(commandParts[4])
 
-            #print("current port: " + str(currentPort) +  "\ndestination IP: " + str(destIP) + "\ndestination port: " + str(destPort) + "\ndata to send: " + str(dataToSend) + "\nfile ext (if applicable): " + str(fileExt))
+            # get time that the message was sent
             sendTime = int(time.time())
 
             # if we are here, can open a socket and send the message
@@ -385,7 +385,7 @@ while(runFlag):
             }
 
             # store time sent, dest IP, despPort, and encryptedKey
-            sentMessages.append({"timeSent":encrPacket['timeSent'], 'destinationIP':encrPacket['destinationIP'], 'destinationPort':encrPacket['destinationPort'], 'encryptedKey':encrPacket['encryptedKey'], 'dataType':encrPacket['fileExt']})
+            sentMessages.append({"timeSent":encrPacket['timeSent'], 'destinationIP':encrPacket['destinationIP'], 'destinationPort':encrPacket['destinationPort'], 'encryptedKey':encrPacket['encryptedKey'], 'dataType':encrPacket['dataType']})
 
             # send with socket here
             client.dataSend(encrPacket)
@@ -411,7 +411,7 @@ while(runFlag):
                 # display relevant information
                 print(str(numSentMsg) + " sent messages:")
                 while sendIndex < numSentMsg:
-                    print("\t" + str(int(sendIndex) + 1) + " || " + str(datetime.fromtimestamp(int(sentMessages[sendIndex]["timeSent"]), timezone.utc)) + " || " + sentMessages[sendIndex]["destinationIP"])
+                    print("\t" + str(sendIndex) + " || " + str(datetime.fromtimestamp(int(sentMessages[sendIndex]["timeSent"]), timezone.utc)) + " || " + sentMessages[sendIndex]["destinationIP"])
                     sendIndex = sendIndex + 1
 
             # view recieved messages
@@ -436,21 +436,43 @@ while(runFlag):
                 print("Please specify if you want to view sent or recieved messages")
                 continue;
 
-        # view [v, view]
+        # decrypt [d, decrypt]
         if((commandParts[0].lower() == VALIDCMDS[2]) or (commandParts[0].lower() == VALIDCMDS[3])):
-            print('view a specific message')
+            print('decrypt a specific message')
             # decrypt a message by its index
+            
             # remove dict with matching time index - https://www.geeksforgeeks.org/python-removing-dictionary-from-list-of-dictionaries/
             #sentMessages = [i for i in sentMessages if not (i['timeSent'] == sendTime)]
 
             # load in flags from command
             selectedIndex = int(commandParts[1])
-            fileName = str(commandParts[2])
-            key = str(commandParts[3])
+            key = str(commandParts[2])
             dataType = receivedMessages[selectedIndex]['dataType']
 
             encryptedMsg = str(receivedMessages[selectedIndex]['encryptedMessage'])
             encryptedMsgSubstr = encryptedMsg[2:126]
+
+            # send ACK to receiver here
+            # generate encrypted form of input key
+            encrypted_key = str(password_encrypt(key.encode(), str(receivedMessages[selectedIndex]['timeSent'])))
+
+            # get time of attempted decryption
+            decryptTime = int(time.time())
+
+            # create dict here
+            decrPacket= {
+                "decryptTime" : decryptTime,
+                "destinationIP" : str(receivedMessages[selectedIndex]['responseIP']),
+                "destinationPort" : str(receivedMessages[selectedIndex]['responsePort']),
+                "encryptedKey" : encrypted_key,
+                "dataType": "attemptedDecryptionKeyNotARealFileExtension"                       # hardcoded joke file extension to indicate ACK packets
+            }
+
+            # store time sent, dest IP, despPort, and encryptedKey
+            sentACK.append({"decryptTime" : decrPacket['decryptTime'], "destinationIP" : decrPacket['destinationIP'], "destinationPort" : decrPacket['destinationPort'], "encryptedKey" : decrPacket['encryptedKey'], "dataType": decrPacket['dataType']})
+
+            # send with socket here
+            client.dataSend(decrPacket)
 
             decrypted_message = str(password_decrypt(encryptedMsgSubstr.encode(), key))
 

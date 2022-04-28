@@ -4,6 +4,7 @@
 import socket
 import pickle
 import json
+import time
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPv4/TCP socket
 
@@ -12,7 +13,7 @@ server.listen(5)
 
 HEADERSIZE = 10
 
-def dataReceive(dest):
+def dataReceive(receivedMessage, receivedACK):
     while True:
         # Accept a new connection
         clientConn, clientAddress = server.accept() 
@@ -69,21 +70,24 @@ def dataReceive(dest):
                 # Reset message size back to zero, will also break us out of the while loop
                 msgSize = 0 
 
-        # save recieved information back in dict
-        print(receivedDict['timeSent'])
-        dest.append({
-            'timeSent':receivedDict['timeSent'],
-            "responseIP":receivedDict['responseIP'],
-            "responsePort":receivedDict['responsePort'],
-            "encryptedMessage":receivedDict['encryptedMessage'],
-            "encryptedKey":receivedDict['encryptedKey'],
-            "dataType":receivedDict['fileExt']})
-            
-        # TEMP
-        print(dest)
+        # if decryption ACK, save in receivedACK
+        if(receivedDict['dataType'] == "attemptedDecryptionKeyNotARealFileExtension"):
+            receivedACK.append({
+                "decryptTime":receivedDict['decryptTime'],
+                "encryptedKey":receivedDict['encryptedKey']
+            })
+
+        # if message, save in recievedMessages
+        else:
+            receivedMessage.append({
+                'timeSent':receivedDict['timeSent'],
+                "responseIP":receivedDict['responseIP'],
+                "responsePort":receivedDict['responsePort'],
+                "encryptedMessage":receivedDict['encryptedMessage'],
+                "encryptedKey":receivedDict['encryptedKey'],
+                "dataType":receivedDict['dataType']})
 
         # Close connection
         clientConn.close()
-        print('Client disconnected')
 
     return
