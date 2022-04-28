@@ -474,24 +474,30 @@ while(runFlag):
             # send with socket here
             client.dataSend(decrPacket)
 
-            decrypted_message = str(password_decrypt(encryptedMsgSubstr.encode(), key))
+            # attempt to decrypt the message\
+            try:
+                decrypted_message = str(password_decrypt(encryptedMsgSubstr.encode(), key))
 
-            # If text, display in console. Else, assume file and ask for file name to write
-            if dataType == NULL:
-                print(f"Message from {receivedMessages[selectedIndex]['responseIP']}: {decrypted_message}")
-            else:
-                print(f"File received from {receivedMessages[selectedIndex]['responseIP']}.")
-                fileSaveName = input("Enter a file name to save: ")
+                # If text, display in console. Else, assume file and ask for file name to write
+                if dataType == NULL:
+                    print(f"Message from {receivedMessages[selectedIndex]['responseIP']}: {decrypted_message}")
+                else:
+                    print(f"File received from {receivedMessages[selectedIndex]['responseIP']}.")
+                    fileSaveName = input("Enter a file name to save: ")
 
-                if not fileSaveName.contains("."):
-                    fileSaveName = fileSaveName + "." + dataType
-                
-                file = open(fileSaveName, "wb") # write file as binary
-                file.write(decrypted_message)
-                file.close()
+                    if not fileSaveName.contains("."):
+                        fileSaveName = fileSaveName + "." + dataType
+                    
+                    file = open(fileSaveName, "wb") # write file as binary
+                    file.write(decrypted_message)
+                    file.close()
 
-                print(f"File saved to: .\{fileSaveName}")
-
+                    print(f"File saved to: .\{fileSaveName}")
+            
+            # catch InvalidSignature error
+            except Exception as inst:
+                continue;
+    
             # Delete dictionary entry since message has been decrypted/viewed
             del receivedMessages[selectedIndex]
 
