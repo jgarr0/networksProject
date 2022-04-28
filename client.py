@@ -26,7 +26,7 @@ def dataSend(dataDict):
         sys.exit()
 
     # Connect to peer via socket
-    print("Establishing socket")
+    #print("Establishing socket")
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPv4/TCP socket
     client.connect((serverIP, int(serverPort)))
 
@@ -38,14 +38,14 @@ def dataSend(dataDict):
 
     # Create a string with the message's length. Our protocol says it will alway be of length "HEADERSIZE"
     msgSize = f"{len(pickledJSON):<{HEADERSIZE}}" 
-    print(f"Message size to send: {msgSize}")
+    #print(f"Message size to send: {msgSize}")
 
     # Create string of bytes with the message length appended to the beginning of the encrypted string (our header)
     fullMsg = bytes(msgSize, "utf-8") + pickledJSON 
-    print(f"Message to send: {fullMsg}")
+    #print(f"Message to send: {fullMsg}")
 
     # Send data stream and close socket
-    print("Message sent")
+    #print("Message sent")
     client.send(fullMsg) 
     client.close()
 

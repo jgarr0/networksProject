@@ -28,9 +28,9 @@ def dataReceive(receivedMessage, receivedACK):
             # Our protocol says the client will send the message size appended to beginning of string
             if newMsg:
                 data = clientConn.recv(HEADERSIZE)
-                print(f"DATA SIZE:{data}")
+                #(f"DATA SIZE:{data}")
                 msgSize = int(data)
-                print(f"Message length to receive: {msgSize}")
+                #print(f"Message length to receive: {msgSize}")
                 newMsg = False
 
             # Break if message size of neg or zero so it doesn't run the remaining code
@@ -44,24 +44,24 @@ def dataReceive(receivedMessage, receivedACK):
                 fullMsgPickled = fullMsgPickled + data
             # Else, the message size is met, so print the full message
             else: 
-                print(f"Received message length: {len(fullMsgPickled)}")
-                print("Full message received!\n")
+                #print(f"Received message length: {len(fullMsgPickled)}")
+                #print("Full message received!\n")
 
-                print ("---------- MESSAGE (Pickled): ---------")
-                print(fullMsgPickled)
-                print ("-----------------------------\n")
+                #print ("---------- MESSAGE (Pickled): ---------")
+                #print(fullMsgPickled)
+                #print ("-----------------------------\n")
 
-                fullMsg = pickle.loads(fullMsgPickled)
-                print ("---------- MESSAGE (Unpickled): ---------")
-                print(fullMsg)
-                print ("-----------------------------\n")
+                #fullMsg = pickle.loads(fullMsgPickled)
+                #print ("---------- MESSAGE (Unpickled): ---------")
+                #print(fullMsg)
+                #print ("-----------------------------\n")
 
                 # Process the obtained JSON data to give us a dictionary again
                 receivedDict = json.loads(fullMsg)
 
                 # Update dictionary with the IP address to use for responses
                 receivedDict.update(responseIP)
-                print(f"Received JSON data:\n{receivedDict}")
+                #print(f"Received JSON data:\n{receivedDict}")
 
                 # Write JSON to file
                 with open('receivedData.json', 'w') as json_file:

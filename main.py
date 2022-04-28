@@ -58,10 +58,6 @@ DFTPORT = 8080
 
 #######################################################################################################################################################
 
-# code from https://www.ipify.org/ -> unneeded
-#def getPublicIP():
-#    return get('https://api.ipify.org').text
-
 # assign the default port
 def newPort():
     print("Enter a new port to receive messages on:")
@@ -183,9 +179,9 @@ def password_encrypt(message: bytes, password: str, iterations: int = iterations
 
 # decrypt message from key
 def password_decrypt(token: bytes, password: str) -> bytes:
-    print(type(token))
-    print(token)
-    print(password)
+    #print(type(token))
+    #print(token)
+    #print(password)
     decoded = b64d(token)
     salt, iter, token = decoded[:16], decoded[16:20], b64e(decoded[20:])
     iterations = int.from_bytes(iter, 'big')
@@ -288,22 +284,12 @@ def getDecryptionStatus(timeSent):
             encryptedMsgSubstr = encryptedMsg.rsplit('\'')
             encryptedText = encryptedMsgSubstr[1]
 
-            print("ENCRYTPOED KEY")
-            print(str(encryptedText))
-
-            print("ENCRYPTED TIME")
-            print(str(x["encryptTime"]).strip())
             try:
                 # decrypt recieved key with time that it was encrytped
                 testKey = password_decrypt(str(encryptedText), str(x["decryptTime"]).strip())
-                print("TESTKEY")
-                print(str(testKey))
 
                 # decrypt encrypted key with time message was sent
-                print(str(encryptedText))
                 realKey = password_decrypt(str(encryptedKey), str(timeSent).strip())
-                print("REALKEY")
-                print(str(realKey))
 
             # if error
             except:
@@ -327,8 +313,6 @@ def getRemainingAttempts(maxAttempts, currentAttempts):
 # display current public IP and defined port
 print('##########################################')
 print('\nWelcome ' + name + '!\n')
-#print('\tYour Public IP is:', getPublicIP()) --> unneeded
-#print('\tCurrently receiving on port:', currentPort) --> unneeded
 print('##########################################\n')
 
 # create listening socket on its own thread here
@@ -347,7 +331,6 @@ while(runFlag):
     if(inputstring != NULL and inputstring.isspace() == False and inputstring != ''):
         # split input at spaces to get command + arguments
         commandParts = shlex.split(inputstring)
-        #print(commandParts)
 
         # if valid command proceed
         if(commandParts[0].lower() not in VALIDCMDS):
@@ -399,12 +382,10 @@ while(runFlag):
             fileExt = NULL
             dataToSend = NULL
             if(msgFmt == '-t'):
-                print('text input')
                 # update contents
                 dataToSend = commandParts[3]
 
             if(msgFmt == '-f'):
-                print('fileInput')
                 # check that file exists
                 if(exists(commandParts[3]) == False):
                     print('Specified file does not exist!')
@@ -494,16 +475,7 @@ while(runFlag):
             # encrypts data and key here
             # just double check these are the correct variables for message and key.
             encrpyted_message = str(password_encrypt(dataToSend.encode(), currentKey))
-            
             encrypted_key = str(password_encrypt(currentKey.encode(), str(sendTime)))
-
-
-            print("KEY UNDER HERE")
-            print(str(currentKey))
-
-
-            print("TIME UNDER HERE")
-            print(str(sendTime))
 
             # create dict here
             encrPacket= {
@@ -576,7 +548,6 @@ while(runFlag):
 
         # decrypt [d, decrypt]
         if((commandParts[0].lower() == VALIDCMDS[2]) or (commandParts[0].lower() == VALIDCMDS[3])):
-            print('decrypt a specific message')
             # decrypt a message by its index
             
             # remove dict with matching time index - https://www.geeksforgeeks.org/python-removing-dictionary-from-list-of-dictionaries/
@@ -590,7 +561,6 @@ while(runFlag):
             # Get message token length and create substring that removes b' '
             encryptedMsg = str(receivedMessages[selectedIndex]['encryptedMessage'])
             encryptedMsgSubstr = encryptedMsg.rsplit('\'')
-            print(encryptedMsgSubstr)
             encryptedText = encryptedMsgSubstr[1]
 
             # generate encrypted form of input key
@@ -618,20 +588,13 @@ while(runFlag):
 
             # attempt to decrypt the message
             try:
-                print("TRYING TO DECRYPT")
-                print("ENCRYPTED KEY")
-                print(encryptedMsg)
-                print("INPUT KEY")
-                print(key)
                 decrypted_message = str(password_decrypt(encryptedText.encode(), key))
-                print(str(decrypted_message))
 
             # catch InvalidSignature error
             except Exception as inst:
                 # delete dictionary entry if maximum number of attempts reached
                 entryCount = 1
                 for x in sentACK:
-                    print(str(x["encryptTime"]))
                     if(str(x['encryptTime']) == str(receivedMessages[selectedIndex]['timeSent'])):
                         entryCount = entryCount + 1
             
@@ -642,7 +605,6 @@ while(runFlag):
             else:
                 # If text, display in console. Else, assume file and ask for file name to write
                 if(dataType == NULL or dataType == '0'):
-                    print("RECEIVED TEXT")
                     print(f"Message from {receivedMessages[selectedIndex]['responseIP']}: {decrypted_message}")
                     # Delete dictionary entry since message has been decrypted/viewed
                     del receivedMessages[selectedIndex]
