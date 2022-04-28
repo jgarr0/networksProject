@@ -449,8 +449,10 @@ while(runFlag):
             key = str(commandParts[2])
             dataType = receivedMessages[selectedIndex]['dataType']
 
+            # Get message tocken length and create substring that removes b' '
             encryptedMsg = str(receivedMessages[selectedIndex]['encryptedMessage'])
-            encryptedMsgSubstr = encryptedMsg[2:126]
+            endChar = len(encryptedMsg) - 1
+            encryptedMsgSubstr = encryptedMsg[2:endChar]
 
             # send ACK to receiver here
             # generate encrypted form of input key
