@@ -272,24 +272,20 @@ def getDecryptionStatus(timeSent):
     # obtain encrypted key
     for x in sentMessages:
         if(x["timeSent"] == timeSent):
-            encryptedKeyString = x["encryptedKey"]
-            encryptedMsgSubstr = encryptedKeyString.rsplit('\'')
-            encryptedKey = encryptedMsgSubstr[1]
+            encryptedKey = str(x["encryptedKey"])
+            encryptedKey = encryptedKey[2:(len(encryptedKey) - 1)]
 
     # compare recieved message key
     for x in receivedACK:
         if(str(x["encryptTime"]).strip() == str(timeSent).strip()):
             # get meaningful content of recieved encrypted key
             encryptedMsg = str(x["encryptedKey"])
-            encryptedMsgSubstr = encryptedMsg.rsplit('\'')
-            encryptedText = encryptedMsgSubstr[1]
-
+            encryptedMsg = encryptedMsg[2:(len(encryptedMsg) - 1)]
             try:
                 # decrypt recieved key with time that it was encrytped
-                testKey = password_decrypt(str(encryptedText), str(x["decryptTime"]).strip())
-
+                testKey = password_decrypt(encryptedMsg.encode('utf-8'), str(x["decryptTime"]).strip())
                 # decrypt encrypted key with time message was sent
-                realKey = password_decrypt(str(encryptedKey), str(timeSent).strip())
+                realKey = password_decrypt(encryptedKey.encode('utf-8'), str(timeSent).strip())
 
             # if error
             except:
@@ -300,8 +296,6 @@ def getDecryptionStatus(timeSent):
                 # compare decryption results
                 if(str(testKey) == str(realKey)):
                     return str("Decrypted")
-                else:
-                    return str("Not decrypted") 
 
     # if here, not in recievedACK
     return str("Not decrypted")
@@ -415,7 +409,7 @@ while(runFlag):
                 argLength = len(commandParts[4])
 
                 # if enclosed with parenthesis, argument is the key
-                if((commandParts[4][0] == '"' and commandParts[4][argLength-1] == '"') or (commandParts[4][0] == '\'' and commandParts[4][argLength-1] == '\'')):
+                if(commandParts[4].isnumeric() == False):
                     # check that provided key is not whitespace
                     if(str(commandParts[4]).isspace()):
                         print("Provided key can not be only whitespace")
@@ -432,14 +426,14 @@ while(runFlag):
 
                 # otherwise, argument is the number of attempts
                 else:
-                    if(str(commandParts[4]).isnumeric() == True and (int(commandParts[4]) < 101 and int(commandParts[4]) > 1)):
+                    if(str(commandParts[4]).isnumeric() == True and (int(commandParts[4]) < 101 and int(commandParts[4]) > 0)):
                         numAttempts = str(commandParts[4])  
                         currentKey = str(DFTKEY)
 
                     # stop if bad argument
                     else:
                         continue;
-
+            
             # if both optional arguments, ensure that they are in the correct order and that they are valid
             if(numArg == 6):
                 # make sure first argument is the key
@@ -458,14 +452,13 @@ while(runFlag):
                     currentKey = str(commandParts[4])
 
                 # make sure that the number of tries is valid
-                if(str(commandParts[5]).isnumeric() == True and (int(commandParts[5]) < 101 and int(commandParts[5]) > 1)):
+                if(str(commandParts[5]).isnumeric() == True and (int(commandParts[5]) < 101 and int(commandParts[5]) > 0)):
                     numAttempts = str(commandParts[5])  
 
                 # stop if bad argument
                 else:
                     continue;
-                # make sure second argument is the number of attempts
-                    
+
             # get time that the message was sent
             sendTime = int(time.time())
 
@@ -559,9 +552,8 @@ while(runFlag):
             dataType = receivedMessages[selectedIndex]['dataType']
 
             # Get message token length and create substring that removes b' '
-            encryptedMsg = str(receivedMessages[selectedIndex]['encryptedMessage'])
-            encryptedMsgSubstr = encryptedMsg.rsplit('\'')
-            encryptedText = encryptedMsgSubstr[1]
+            encryptedMsg = (receivedMessages[selectedIndex]['encryptedMessage'])
+            encryptedMsg = encryptedMsg[2:(len(encryptedMsg) - 1)]
 
             # generate encrypted form of input key
             # get time of attempted decryption
@@ -588,7 +580,7 @@ while(runFlag):
 
             # attempt to decrypt the message
             try:
-                decrypted_message = str(password_decrypt(encryptedText.encode(), key))
+                decrypted_message = str(password_decrypt(encryptedMsg.encode('utf-8'), str(key).strip()))
 
             # catch InvalidSignature error
             except Exception as inst:
