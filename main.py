@@ -545,79 +545,100 @@ while(runFlag):
         # decrypt [d, decrypt]
         if((commandParts[0].lower() == VALIDCMDS[2]) or (commandParts[0].lower() == VALIDCMDS[3])):
             # decrypt a message by its index
-            
-            # remove dict with matching time index - https://www.geeksforgeeks.org/python-removing-dictionary-from-list-of-dictionaries/
-            #sentMessages = [i for i in sentMessages if not (i['timeSent'] == sendTime)]
 
-            # load in flags from command
-            selectedIndex = int(commandParts[1])
-            key = str(commandParts[2])
-            dataType = receivedMessages[selectedIndex]['dataType']
-
-            # Get message token length and create substring that removes b' '
-            encryptedMsg = (receivedMessages[selectedIndex]['encryptedMessage'])
-            encryptedMsg = encryptedMsg[2:(len(encryptedMsg) - 1)]
-
-            # generate encrypted form of input key
-            # get time of attempted decryption
-            decryptTime = int(time.time())
-
-            # encrypt key with current time
-            encrypted_key = str(password_encrypt(key.encode(), str(decryptTime)))
-
-            # create dict here
-            decrPacket= {
-                "encryptTime" : str(receivedMessages[selectedIndex]['timeSent']),
-                "decryptTime" : decryptTime,
-                "destinationIP" : str(receivedMessages[selectedIndex]['responseIP']),
-                "destinationPort" : str(receivedMessages[selectedIndex]['responsePort']),
-                "encryptedKey" : str(encrypted_key),
-                "dataType": "attemptedDecryptionKeyNotARealFileExtension"                       # hardcoded joke file extension to indicate ACK packets
-            }
-
-            # store time sent, dest IP, despPort, and encryptedKey
-            sentACK.append({"encryptTime" : decrPacket['encryptTime'], "decryptTime" : decrPacket['decryptTime'], "destinationIP" : decrPacket['destinationIP'], "destinationPort" : decrPacket['destinationPort'], "encryptedKey" : decrPacket['encryptedKey'], "dataType": decrPacket['dataType']})
-
-            # send ACK to  original sender here
-            client.dataSend(decrPacket)
-
-            # attempt to decrypt the message
-            try:
-                decrypted_message = password_decrypt(encryptedMsg, str(key).strip())
-
-            # catch InvalidSignature error
-            except Exception as inst:
-                # delete dictionary entry if maximum number of attempts reached
-                entryCount = 1
-                for x in sentACK:
-                    if(str(x['encryptTime']) == str(receivedMessages[selectedIndex]['timeSent'])):
-                        entryCount = entryCount + 1
-            
-                # delete entry if max attempts exceeded
-                if(int(entryCount) > int(receivedMessages[selectedIndex]["maxAttempts"])):
-                    del receivedMessages[selectedIndex]
-    
-            else:
-                # If text, display in console. Else, assume file and ask for file name to write
-                if(dataType == NULL or dataType == '0'):
-                    print(f"Message from {receivedMessages[selectedIndex]['responseIP']}: {decrypted_message}")
-                    # Delete dictionary entry since message has been decrypted/viewed
-                    del receivedMessages[selectedIndex]
+            numArg = length_hint(commandParts)
+            numRecMsg = length_hint(receivedMessages)
+            if(numArg != 3):
+                print(f"Please specify the message index and key")
+                continue;
+            elif not commandParts[1].isnumeric():
+                print(f"Message index must be a number")
+                continue;
+            elif (numRecMsg == 0):
+                print(f"You have no received messages!")
+            elif (int(commandParts[1]) < 0) or (int(commandParts[1]) > (numRecMsg - 1)):
+                if (numRecMsg == 1):
+                    print(f"You can only select message 0")
+                    continue;
                 else:
-                    print(f"File received from {receivedMessages[selectedIndex]['responseIP']}.")
-                    fileSaveName = input("Enter a file name to save (without the extension): ")
-                    
-                    # append extension
-                    fileSaveName = fileSaveName + "." + dataType
-                    
-                    file = open(fileSaveName, "wb") # write file as binary
-                    file.write(decrypted_message)
-                    file.close()
+                    print(f"Message index must be between 0 and {numRecMsg - 1}")
+                    continue;
+            elif(str(commandParts[2]).isspace()):
+                print("Provided key can not be only whitespace")
+                continue;
+            else:
+                # remove dict with matching time index - https://www.geeksforgeeks.org/python-removing-dictionary-from-list-of-dictionaries/
+                #sentMessages = [i for i in sentMessages if not (i['timeSent'] == sendTime)]
 
-                    print(f"File saved to: .\{fileSaveName}")
-            
-                    # Delete dictionary entry since message has been decrypted/viewed
-                    del receivedMessages[selectedIndex]
+                # load in flags from command
+                selectedIndex = int(commandParts[1])
+                key = str(commandParts[2])
+                dataType = receivedMessages[selectedIndex]['dataType']
+
+                # Get message token length and create substring that removes b' '
+                encryptedMsg = (receivedMessages[selectedIndex]['encryptedMessage'])
+                encryptedMsg = encryptedMsg[2:(len(encryptedMsg) - 1)]
+
+                # generate encrypted form of input key
+                # get time of attempted decryption
+                decryptTime = int(time.time())
+
+                # encrypt key with current time
+                encrypted_key = str(password_encrypt(key.encode(), str(decryptTime)))
+
+                # create dict here
+                decrPacket= {
+                    "encryptTime" : str(receivedMessages[selectedIndex]['timeSent']),
+                    "decryptTime" : decryptTime,
+                    "destinationIP" : str(receivedMessages[selectedIndex]['responseIP']),
+                    "destinationPort" : str(receivedMessages[selectedIndex]['responsePort']),
+                    "encryptedKey" : str(encrypted_key),
+                    "dataType": "attemptedDecryptionKeyNotARealFileExtension"                       # hardcoded joke file extension to indicate ACK packets
+                }
+
+                # store time sent, dest IP, despPort, and encryptedKey
+                sentACK.append({"encryptTime" : decrPacket['encryptTime'], "decryptTime" : decrPacket['decryptTime'], "destinationIP" : decrPacket['destinationIP'], "destinationPort" : decrPacket['destinationPort'], "encryptedKey" : decrPacket['encryptedKey'], "dataType": decrPacket['dataType']})
+
+                # send ACK to  original sender here
+                client.dataSend(decrPacket)
+
+                # attempt to decrypt the message
+                try:
+                    decrypted_message = password_decrypt(encryptedMsg, str(key).strip())
+
+                # catch InvalidSignature error
+                except Exception as inst:
+                    # delete dictionary entry if maximum number of attempts reached
+                    entryCount = 1
+                    for x in sentACK:
+                        if(str(x['encryptTime']) == str(receivedMessages[selectedIndex]['timeSent'])):
+                            entryCount = entryCount + 1
+                
+                    # delete entry if max attempts exceeded
+                    if(int(entryCount) > int(receivedMessages[selectedIndex]["maxAttempts"])):
+                        del receivedMessages[selectedIndex]
+        
+                else:
+                    # If text, display in console. Else, assume file and ask for file name to write
+                    if(dataType == NULL or dataType == '0'):
+                        print(f"Message from {receivedMessages[selectedIndex]['responseIP']}: {decrypted_message}")
+                        # Delete dictionary entry since message has been decrypted/viewed
+                        del receivedMessages[selectedIndex]
+                    else:
+                        print(f"File received from {receivedMessages[selectedIndex]['responseIP']}.")
+                        fileSaveName = input("Enter a file name to save (without the extension): ")
+                        
+                        # append extension
+                        fileSaveName = fileSaveName + "." + dataType
+                        
+                        file = open(fileSaveName, "wb") # write file as binary
+                        file.write(decrypted_message)
+                        file.close()
+
+                        print(f"File saved to: .\{fileSaveName}")
+                
+                        # Delete dictionary entry since message has been decrypted/viewed
+                        del receivedMessages[selectedIndex]
 
         # help [h, help, q]
         if((commandParts[0].lower() == VALIDCMDS[4]) or (commandParts[0].lower() == VALIDCMDS[5]) or (commandParts[0].lower() == VALIDCMDS[6])):
