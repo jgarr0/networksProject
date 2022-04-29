@@ -622,7 +622,7 @@ while(runFlag):
                 else:
                     # If text, display in console. Else, assume file and ask for file name to write
                     if(dataType == NULL or dataType == '0'):
-                        print(f"Message from {receivedMessages[selectedIndex]['responseIP']}: str({decrypted_message})")
+                        print(f"Message from {receivedMessages[selectedIndex]['responseIP']}: {str(decrypted_message)}")
                         # Delete dictionary entry since message has been decrypted/viewed
                         del receivedMessages[selectedIndex]
                     else:
