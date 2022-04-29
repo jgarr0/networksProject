@@ -67,7 +67,7 @@ def newPort():
         #discard non numeric input
         alphaPort = newPortNum.isnumeric()
         if(alphaPort == False):
-            print('Ports can not contain characters!')
+            print('Ports cannot contain characters!')
         else:
             # invalid port range
             if(int(newPortNum) < 1024 or int(newPortNum) > 65535):
@@ -88,7 +88,7 @@ def firstTimeSetup():
     newPortNumber = DFTPORT
 
     # get response
-    portResponse = input('Would you like to recieve messages on the default port (8080)? ')
+    portResponse = input('Would you like to receive messages on the default port (8080)? ')
     if(portResponse != 'y' and portResponse != 'yes'):
         newPortNumber = newPort()
 
@@ -275,14 +275,14 @@ def getDecryptionStatus(timeSent):
             encryptedKey = str(x["encryptedKey"])
             encryptedKey = encryptedKey[2:(len(encryptedKey) - 1)]
 
-    # compare recieved message key
+    # compare received message key
     for x in receivedACK:
         if(str(x["encryptTime"]).strip() == str(timeSent).strip()):
-            # get meaningful content of recieved encrypted key
+            # get meaningful content of received encrypted key
             encryptedMsg = str(x["encryptedKey"])
             encryptedMsg = encryptedMsg[2:(len(encryptedMsg) - 1)]
             try:
-                # decrypt recieved key with time that it was encrytped
+                # decrypt received key with time that it was encrypted
                 testKey = password_decrypt(encryptedMsg.encode('utf-8'), str(x["decryptTime"]).strip())
                 # decrypt encrypted key with time message was sent
                 realKey = password_decrypt(encryptedKey.encode('utf-8'), str(timeSent).strip())
@@ -300,13 +300,14 @@ def getDecryptionStatus(timeSent):
     # if here, not in recievedACK
     return str("Not decrypted")
 
-# return the number of attempts left ot decrypt the message
+# return the number of attempts left to decrypt the message
 def getRemainingAttempts(maxAttempts, currentAttempts):
     return int(maxAttempts) - int(currentAttempts)
 
-# display current public IP and defined port
+# display welcome message
 print('##########################################')
-print('\nWelcome ' + name + '!\n')
+print('\nWelcome, ' + name + '!\n')
+print('\nType \"h\" or \"help\" to list commands\n')
 print('##########################################\n')
 
 # create listening socket on its own thread here
@@ -564,7 +565,7 @@ while(runFlag):
                     print(f"Message index must be between 0 and {numRecMsg - 1}")
                     continue;
             elif(str(commandParts[2]).isspace()):
-                print("Provided key can not be only whitespace")
+                print("Provided key cannot only be whitespace")
                 continue;
             else:
                 # remove dict with matching time index - https://www.geeksforgeeks.org/python-removing-dictionary-from-list-of-dictionaries/

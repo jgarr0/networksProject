@@ -33,7 +33,7 @@ def dataReceive(receivedMessage, receivedACK):
                 #print(f"Message length to receive: {msgSize}")
                 newMsg = False
 
-            # Break if message size of neg or zero so it doesn't run the remaining code
+            # Break if message size of negative or zero so it doesn't run the remaining code
             if msgSize <= 0: 
                 break
 

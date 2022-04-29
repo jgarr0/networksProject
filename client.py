@@ -1,5 +1,4 @@
 # Client script
-# TO-DO: Generate JSON in client script, parse JSON in server script, add client/server logic to output as string or reconstruct file, restructure socket code be its own function?
 
 import socket
 import pickle
