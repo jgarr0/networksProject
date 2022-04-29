@@ -374,10 +374,10 @@ while(runFlag):
 
             # handle -t = text
             fileExt = NULL
-            dataToSend = NULL
+            dataToSend = b'NULL'
             if(msgFmt == '-t'):
                 # update contents
-                dataToSend = commandParts[3]
+                dataToSend = commandParts[3].encode()
 
             if(msgFmt == '-f'):
                 # check that file exists
@@ -391,7 +391,7 @@ while(runFlag):
                         print("Can not determine file extension from the provided path")
                         continue;
                     fileInput = open(commandParts[3], 'rb')
-                    dataToSend = str(fileInput.read())
+                    dataToSend = fileInput.read()
 
             # key check
             currentKey = NULL
@@ -465,9 +465,12 @@ while(runFlag):
             # if we are here, can open a socket and send the message
             # all required info is here
 
+            # UNCOMMENT BELOW PRINT COMMAND TO SEE ENCODED DATA TO BE SENT
+            #print(f"!B: {dataToSend}")
+
             # encrypts data and key here
             # just double check these are the correct variables for message and key.
-            encrpyted_message = str(password_encrypt(dataToSend.encode(), currentKey))
+            encrpyted_message = str(password_encrypt(dataToSend, currentKey))
             encrypted_key = str(password_encrypt(currentKey.encode(), str(sendTime)))
 
             # create dict here
@@ -517,7 +520,7 @@ while(runFlag):
                     print("\t" + str(sendIndex) + " || " + str(datetime.fromtimestamp(int(sentMessages[sendIndex]["timeSent"]), timezone.utc)) + " || " + str(sentMessages[sendIndex]["destinationIP"]) + " || " + sentMessages[sendIndex]["maxAttempts"] + " || " + str(currentAttempts) + " || " + str(getRemainingAttempts(sentMessages[sendIndex]["maxAttempts"], currentAttempts)) + " || " + str(getDecryptionStatus(sentMessages[sendIndex]["timeSent"])))
                     sendIndex = sendIndex + 1
 
-            # view recieved messages
+            # view received messages
             elif(commandParts[1].lower() == VALVIEW[1]):
                 # index received messages
                 numRecMsg = length_hint(receivedMessages)
@@ -580,7 +583,7 @@ while(runFlag):
 
             # attempt to decrypt the message
             try:
-                decrypted_message = str(password_decrypt(encryptedMsg.encode('utf-8'), str(key).strip()))
+                decrypted_message = password_decrypt(encryptedMsg, str(key).strip())
 
             # catch InvalidSignature error
             except Exception as inst:
@@ -608,7 +611,7 @@ while(runFlag):
                     fileSaveName = fileSaveName + "." + dataType
                     
                     file = open(fileSaveName, "wb") # write file as binary
-                    file.write(decrypted_message.encode('utf-8'))
+                    file.write(decrypted_message)
                     file.close()
 
                     print(f"File saved to: .\{fileSaveName}")
